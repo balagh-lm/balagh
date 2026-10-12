@@ -21,6 +21,7 @@ N_BELE = int(os.environ.get("N_BELE", 300))       # items per Belebele language
 SEED = 0
 OUT_DIR = "/kaggle/working" if os.path.isdir("/kaggle/working") else "."
 LETTERS = ["A", "B", "C", "D"]
+ALL_LETTERS = ["A", "B", "C", "D", "E", "F"]
 
 # (name, repo, quant) ; quant in {None, "8bit", "4bit"}
 MODELS = [
@@ -46,21 +47,23 @@ def load_items():
     mm = load_dataset("MBZUAI/UrduMMLU", split="test")
     idx = list(range(len(mm))); random.shuffle(idx)
     for i in idx[:N_MMLU]:
-        r = mm[i]; opts = r["options"]
-        items["urdummlu"].append({"id": r["id"], "q": r["question"], "choices": [opts[k] for k in LETTERS], "gold": LETTERS.index(r["correct_key"]), "domain": r["domain"]})
+        r = mm[i]; opts = r["options"] or {}
+        keys = sorted(k for k, v in opts.items() if v)          # some items have 5 options (A-E) or blanks
+        if r["correct_key"] not in keys or len(keys) < 2: continue
+        items["urdummlu"].append({"id": r["id"], "q": r["question"], "letters": keys, "choices": [opts[k] for k in keys], "gold": keys.index(r["correct_key"]), "domain": r["domain"]})
     for code, key in [("urd_Arab", "belebele_urd"), ("pbt_Arab", "belebele_pbt"), ("snd_Arab", "belebele_snd")]:
         b = load_dataset("facebook/belebele", code, split="test")
         idx = list(range(len(b))); random.seed(SEED); random.shuffle(idx)
         for i in idx[:N_BELE]:
             r = b[i]
-            items[key].append({"id": f"{code}-{r['question_number']}-{i}", "passage": r["flores_passage"], "q": r["question"], "choices": [r[f"mc_answer{k}"] for k in range(1, 5)], "gold": int(r["correct_answer_num"]) - 1})
+            items[key].append({"id": f"{code}-{r['question_number']}-{i}", "passage": r["flores_passage"], "q": r["question"], "letters": LETTERS, "choices": [r[f"mc_answer{k}"] for k in range(1, 5)], "gold": int(r["correct_answer_num"]) - 1})
     return items
 
 def prompt_of(it):
     head = "The following is a multiple choice question. Answer with the letter of the correct option.\n\n"
     if "passage" in it:
         head += "Passage: " + it["passage"].strip() + "\n\n"
-    body = "Question: " + it["q"].strip() + "\n" + "\n".join(f"{L}. {c}" for L, c in zip(LETTERS, it["choices"])) + "\nAnswer:"
+    body = "Question: " + it["q"].strip() + "\n" + "\n".join(f"{L}. {c}" for L, c in zip(it["letters"], it["choices"])) + "\nAnswer:"
     return head + body
 
 # ------------------------------------------------------------------ model loading
@@ -87,11 +90,11 @@ def load_model(repo, quant):
     return tok, model
 
 def letter_token_ids(tok):
-    ids = []
-    for L in LETTERS:
+    ids = {}
+    for L in ALL_LETTERS:
         cand = tok.encode(" " + L, add_special_tokens=False)
         if len(cand) != 1: cand = tok.encode(L, add_special_tokens=False)
-        ids.append(cand[-1])
+        ids[L] = cand[-1]
     return ids
 
 @torch.no_grad()
@@ -104,7 +107,8 @@ def score_items(tok, model, items, lids, max_len=1536, tag=""):
         enc = {a: b.to(dev) for a, b in enc.items() if a in ("input_ids", "attention_mask")}
         logits = model(**enc).logits[0, -1].float()
         if not torch.isfinite(logits).all(): nonfinite += 1
-        pick = int(torch.argmax(logits[lids]))
+        lid = [lids[L] for L in it["letters"]]
+        pick = int(torch.argmax(logits[lid]))
         ok = int(pick == it["gold"]); correct += ok; n += 1
         d = it.get("domain", "all"); per_domain.setdefault(d, [0, 0]); per_domain[d][0] += ok; per_domain[d][1] += 1
         if (k + 1) % 200 == 0: print(f"    {tag} {k+1}/{len(items)} acc={correct/n:.3f} ({time.time()-t0:.0f}s)", flush=True)
