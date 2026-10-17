@@ -623,7 +623,10 @@ def dedup_language(lang, routed, out, done_out):
         print(f"skip {lang}: stats.json present (FORCE=1 to redo)"); return
     files = sorted(routed.files(f"{lang}/"), key=lambda f: (S.get(f.split("/")[1].replace("__", ":"), {"prio": 9})["prio"], f))
     files = [f for f in files if f.endswith(".parquet")]
-    if not files: print(f"== {lang}: no routed files"); return
+    if not files:
+        print(f"== {lang}: no routed files (recording an empty stats.json)")
+        out.add_json(f"{lang}/stats.json", {"in": 0, "kept": 0, "words": 0, "shards": 0, "note": "no routed documents"}); out.flush(f"{lang}: no routed documents")
+        return
     t0 = time.time(); GRAMS, used = eval_grams(lang)
     print(f"== {lang}: {len(files)} routed files; {len(GRAMS):,} eval 13-grams", flush=True)
     p = pool()   # forked after GRAMS is set, so workers see it
