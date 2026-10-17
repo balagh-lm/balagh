@@ -11,7 +11,9 @@
 # Mix = shares of TOTAL_TOKENS (default 8e9), each capped by the data available x its max epochs. Input files are
 # visited in a fixed hash order, so a budget cut takes a representative sample rather than the first sources.
 # Runs on Kaggle CPU or Colab CPU. Parallel sessions: SOURCES=urd_Arab | SOURCES=en_edu,code,math | the rest; then
-# MODE=manifest once. Needs HF_TOKEN (write). Smoke test: TOTAL_TOKENS=2e7 LOCAL_OUT=/kaggle/working/tok.
+# MODE=manifest once (or THEN_MANIFEST=1 on each job: the last to finish writes it). WAIT_CORPUS_MIN=600 lets a job
+# start before corpus-v1 is built and wait for each language's stats.json. Needs HF_TOKEN (write).
+# Smoke test: TOTAL_TOKENS=2e7 LOCAL_OUT=/kaggle/working/tok.
 
 import os, io, json, time, math, glob, shutil, hashlib, collections, traceback
 import numpy as np
@@ -29,6 +31,8 @@ SOURCES_SEL = [x.strip() for x in os.environ.get("SOURCES", "").split(",") if x.
 LOCAL_OUT = os.environ.get("LOCAL_OUT")
 CORPUS_DIR = os.environ.get("CORPUS_DIR")      # dry run: read corpus-v1 from a local folder (01_build_corpus LOCAL_OUT layout)
 WALL_SECONDS = int(os.environ.get("WALL_SECONDS", 11 * 3600 + 15 * 60))
+WAIT_CORPUS_MIN = float(os.environ.get("WAIT_CORPUS_MIN", 0))   # >0: poll until corpus-v1 has {lang}/stats.json (launch before the corpus build ends)
+THEN_MANIFEST = os.environ.get("THEN_MANIFEST") == "1"          # write manifest.json when this job finishes and every source is finished
 COMMIT_EVERY_S = int(os.environ.get("COMMIT_EVERY_S", 300))
 SCRATCH = os.environ.get("SCRATCH") or ("/content/scratch" if os.path.isdir("/content") else "/tmp/balagh-tok" if os.name == "posix" else "./scratch-tok")
 os.makedirs(SCRATCH, exist_ok=True); T0 = time.time()
@@ -133,12 +137,49 @@ def commit(ops, message):
 def save_npy(arr, name):
     p = os.path.join(SCRATCH, name.replace("/", "__")); np.save(p, arr); return p if p.endswith(".npy") else p + ".npy"
 
+def corpus_files():
+    if CORPUS_DIR: return {os.path.relpath(os.path.join(d, f), CORPUS_DIR).replace("\\", "/") for d, _, ff in os.walk(CORPUS_DIR) for f in ff}
+    from huggingface_hub.errors import RepositoryNotFoundError
+    for attempt in range(6):
+        try: return set(api.list_repo_files(CORPUS, repo_type="dataset"))
+        except RepositoryNotFoundError: return set()
+        except Exception as e:
+            if attempt == 5: raise
+            print("   corpus list retry", attempt, str(e)[:100], flush=True); time.sleep(min(300, 20 * 2 ** attempt))
+
+def corpus_stats(lang):
+    """corpus-v1's stats.json for a language (written last, after all its shards), or None while it is not built."""
+    if f"{lang}/stats.json" not in corpus_files(): return None
+    p = os.path.join(CORPUS_DIR, lang, "stats.json") if CORPUS_DIR else \
+        hf_hub_download(CORPUS, f"{lang}/stats.json", repo_type="dataset", token=TOKEN, local_dir=os.path.join(SCRATCH, "cstats"), force_download=True)
+    return json.load(open(p, encoding="utf-8"))
+
+def wait_for_corpus(names):
+    need = [n for n in names if MIX[n][2][0] == CORPUS]
+    t_end = time.time() + WAIT_CORPUS_MIN * 60
+    while need:
+        have = corpus_files(); missing = [n for n in need if f"{n}/stats.json" not in have]
+        if not missing: return
+        if time.time() >= t_end:
+            raise SystemExit(f"corpus-v1 is not finished for {missing} (no stats.json yet): run after 01_build_corpus dedup, or set WAIT_CORPUS_MIN")
+        print(f"   waiting for corpus-v1 {missing}: {(t_end - time.time()) / 60:.0f} min of waiting left", flush=True); time.sleep(600)
+
 def is_val_doc(t):
     return int(hashlib.md5(t[:4000].encode("utf-8")).hexdigest()[:8], 16) % 1000 < VAL_PERMILLE
 
 def tokenize_source(name, tok, eos):
     share, max_ep, (repo, pattern, field) = MIX[name]
     budget = int(TOTAL * share)
+    if repo == CORPUS:
+        cs = corpus_stats(name)
+        if cs is not None and not cs.get("kept"):   # e.g. a language PakLID never predicted: record it as an empty, finished source
+            prev = read_json(f"_state/{name}.json")
+            if prev and prev.get("empty"): print(f"== {name}: empty in corpus-v1 (recorded earlier)"); return prev
+            print(f"== {name}: corpus-v1 has no documents ({cs.get('note') or 'kept 0'}); recording an empty finished source", flush=True)
+            st = {"epoch": 0, "file": 0, "row": 0, "carry": [], "vcarry": [], "val_count": 0, "shards": 0, "tokens": 0, "words": 0, "docs": 0, "val_docs": 0,
+                  "finished": True, "epochs_used": 0, "empty": True, "budget": budget, "seq": SEQ, "tokenizer": TOKENIZER, "files_fp": "empty", "max_ep": max_ep}
+            sp = os.path.join(SCRATCH, f"state-{name}.json"); json.dump(st, open(sp, "w"))
+            commit([(f"_state/{name}.json", sp)], f"{name}: empty in corpus-v1"); return st
     files = files_of(repo, pattern)
     if not files: raise RuntimeError(f"{name}: no files for {repo}/{pattern}")
     fp = hashlib.sha1("\n".join(files).encode()).hexdigest()[:16]
@@ -248,6 +289,7 @@ if __name__ == "__main__":
         eos = tok.eos_token_id if tok.eos_token_id is not None else tok.convert_tokens_to_ids("<|endoftext|>")
         assert eos is not None and len(tok) < 2**32
         print(f"tokenizer {TOKENIZER}: vocab {len(tok):,}, eos {eos} ({tok.convert_ids_to_tokens(eos)}), seq {SEQ}, total budget {TOTAL/1e9:.2f}B", flush=True)
+        wait_for_corpus(SOURCES_SEL or list(MIX))
         failed = []
         for name in (SOURCES_SEL or list(MIX)):
             ok = False
@@ -260,5 +302,9 @@ if __name__ == "__main__":
             if not ok: failed.append(name)
             if time.time() - T0 > WALL_SECONDS: break
         if not SOURCES_SEL and not failed: write_manifest()
+        elif THEN_MANIFEST and not failed:   # parallel jobs: whichever finishes last writes the manifest (a tie writes it twice, identically)
+            waiting = [n for n in MIX if not (read_json(f"_state/{n}.json") or {}).get("finished")]
+            if waiting: print(f"manifest left to the last tokenisation job; not finished yet: {waiting}")
+            else: write_manifest()
         if failed: raise SystemExit(f"INCOMPLETE sources (rerun to resume): {failed}")
     print(f"DONE in {(time.time()-T0)/60:.1f} min")

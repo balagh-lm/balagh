@@ -62,9 +62,9 @@ JOBS = {   # job name -> (script spec, knob overrides, one-line purpose)
     "k07_dedup_all":       ("01_build_corpus", {"MODE": "dedup", "LANGS": ""}, "Dedup + decontaminate every language and write the card (rerun if a routing job could not)"),
     "k08_sft_data":        ("03_sft_data", {}, "Build balagh-lm/sft-v0"),
     "k09_eval_baselines_t4": ("balagh_eval_baselines", {}, "Baseline evals on Kaggle GPU T4 x2 (set Accelerator: GPU T4 x2)"),
-    "k10_tok_urdu":        ("05_tokenize_export", {"SOURCES": "urd_Arab", "TOTAL_TOKENS": "8e9"}, "Tokenise Urdu (after corpus-v1 exists)"),
-    "k11_tok_replay":      ("05_tokenize_export", {"SOURCES": "en_edu,code,math", "TOTAL_TOKENS": "8e9"}, "Tokenise English/code/maths replay"),
-    "k12_tok_rest":        ("05_tokenize_export", {"SOURCES": "pbt_Arab,snd_Arab,pnb_Arab,skr_Arab,bal_Arab,brh_Arab,kas_Arab,hno_Arab,phr_Arab,urd_Latn", "TOTAL_TOKENS": "8e9"}, "Tokenise the other languages"),
+    "k10_tok_urdu":        ("05_tokenize_export", {"SOURCES": "urd_Arab", "TOTAL_TOKENS": "8e9", "WAIT_CORPUS_MIN": "600", "THEN_MANIFEST": "1"}, "Tokenise Urdu (waits up to 10 h for corpus-v1)"),
+    "k11_tok_replay":      ("05_tokenize_export", {"SOURCES": "en_edu,code,math", "TOTAL_TOKENS": "8e9", "THEN_MANIFEST": "1"}, "Tokenise English/code/maths replay"),
+    "k12_tok_rest":        ("05_tokenize_export", {"SOURCES": "pbt_Arab,snd_Arab,pnb_Arab,skr_Arab,bal_Arab,brh_Arab,kas_Arab,hno_Arab,phr_Arab,urd_Latn", "TOTAL_TOKENS": "8e9", "WAIT_CORPUS_MIN": "600", "THEN_MANIFEST": "1"}, "Tokenise the other languages (waits up to 10 h for corpus-v1)"),
     "k13_tok_manifest":    ("05_tokenize_export", {"MODE": "manifest", "TOTAL_TOKENS": "8e9"}, "Write the token manifest (after k10-k12)"),
 }
 for job, (spec_name, knobs, purpose) in JOBS.items():

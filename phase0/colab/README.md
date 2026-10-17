@@ -17,7 +17,7 @@ Data jobs run on **Kaggle CPU** as batch runs ("Save & Run All"), so they keep g
 | 1d | `01_build_corpus` with `MODE='card'` | Kaggle CPU, minutes | data card with the routing matrix |
 | 2 | `03_sft_data` | Kaggle CPU | `balagh-lm/sft-v0` |
 | 3 | `../balagh_eval_baselines` | Colab A100 or L4 | baseline table (Qwen3.5-2B-Base is the gate) |
-| 4 | `05_tokenize_export`, three copies: `SOURCES='urd_Arab'`, `'en_edu,code,math'`, `'pbt_Arab,snd_Arab,pnb_Arab,skr_Arab,bal_Arab,brh_Arab,kas_Arab,hno_Arab,phr_Arab,urd_Latn'`, then `MODE='manifest'` | Kaggle CPU | `balagh-lm/tokens-qwen35-v1` |
+| 4 | `05_tokenize_export`, three copies: `SOURCES='urd_Arab'`, `'en_edu,code,math'`, `'pbt_Arab,snd_Arab,pnb_Arab,skr_Arab,bal_Arab,brh_Arab,kas_Arab,hno_Arab,phr_Arab,urd_Latn'`, then `MODE='manifest'` (the Kaggle launchers k10-k12 set `WAIT_CORPUS_MIN='600'` and `THEN_MANIFEST='1'`, so they can start before corpus-v1 is finished and the last one writes the manifest) | Kaggle CPU | `balagh-lm/tokens-qwen35-v1` |
 | 5 | AWS smoke, pilot, main run | AWS p5.4xlarge | `balagh-lm/balagh-nano-ckpt` (private) |
 | 6 | `07_sft` (`SMOKE='1'` first) | Colab A100 | `balagh-lm/balagh-nano-v0-instruct` (private until release) |
 
