@@ -737,6 +737,48 @@ Per-language normalisation without global NFKC (Arabic yeh/kaf mapped to Urdu fo
     out.add_bytes("README.md", card.encode("utf-8")); out.flush("data card")
     print(card[:3000])
 
+# ------------------------------------------------------------------------------------------ dedup driver + claims
+import uuid
+SESSION = uuid.uuid4().hex[:12]
+
+def claim(out, name, ttl_h=8):
+    """Best-effort mutual exclusion between parallel sessions: write a claim, wait, re-read; the last writer wins."""
+    if LOCAL_OUT: return True
+    path = f"_claims/{name}.json"
+    def read():
+        try:
+            return json.load(open(hf_hub_download(OUT_REPO, path, repo_type="dataset", token=TOKEN, force_download=True,
+                                                  local_dir=os.path.join(SCRATCH, "claims"))))
+        except Exception: return None
+    c = read()
+    if c and c.get("session") != SESSION and time.time() - c.get("t", 0) < ttl_h * 3600: return False
+    out.add_json(path, {"session": SESSION, "t": time.time()}); out.flush(f"claim {name}")
+    time.sleep(60)
+    c = read()
+    return bool(c and c.get("session") == SESSION)
+
+def run_dedup(langs, use_claims=False):
+    routed = Store(ROUTED_REPO); out = Store(OUT_REPO)
+    unknown = [l for l in langs if l not in TIER_LANGS]
+    if unknown: raise SystemExit(f"unknown LANGS {unknown}; known: {TIER_LANGS}")
+    prog = routed.files("_progress/")
+    incomplete = [k for k in S if f"_progress/{k.replace(':', '__')}/complete.json" not in prog]
+    if incomplete and os.environ.get("ALLOW_INCOMPLETE") != "1" and not LOCAL_OUT:
+        if use_claims: print(f"routing still running for {incomplete}: leaving dedup to the last routing job"); return False
+        raise SystemExit(f"routing is not complete for {incomplete}: finish MODE=route first (ALLOW_INCOMPLETE=1 to dedup anyway)")
+    failed = []
+    for lang in langs:
+        done_out = out.files()
+        if f"{lang}/stats.json" in done_out and os.environ.get("FORCE") != "1": print(f"skip {lang}: done"); continue
+        if use_claims and not claim(out, f"dedup-{lang}"): print(f"skip {lang}: another session claimed it"); continue
+        try: dedup_language(lang, routed, out, done_out)
+        except Exception as e: failed.append(lang); print(f"   FAILED {lang}: {str(e)[:300]}"); traceback.print_exc(limit=3)
+        gc.collect()
+    if failed: raise SystemExit(f"dedup failed for {failed}: rerun MODE=dedup")
+    if all(f"{l}/stats.json" in out.files() for l in TIER_LANGS) and (not use_claims or claim(out, "card")):
+        write_card(routed, out)
+    return True
+
 # ------------------------------------------------------------------------------------------ main
 if __name__ == "__main__":
     print(f"MODE={MODE} workers={WORKERS} scratch={SCRATCH} {'DRY RUN -> ' + LOCAL_OUT if LOCAL_OUT else 'Hub'}", flush=True)
@@ -755,19 +797,10 @@ if __name__ == "__main__":
             try: routed.flush("session end")
             except Exception as e: print("   final flush failed:", str(e)[:200])
         if failed: raise SystemExit(f"route incomplete, rerun this notebook to resume: {failed}")
+        if os.environ.get("THEN_DEDUP") == "1":   # the last routing job to finish builds corpus-v1 and the card
+            run_dedup(TIER_LANGS, use_claims=True)
     elif MODE == "dedup":
-        routed = Store(ROUTED_REPO); out = Store(OUT_REPO); done_out = out.files()
-        langs = [l.strip() for l in (LANGS_SEL.split(",") if LANGS_SEL else TIER_LANGS) if l.strip()]
-        unknown = [l for l in langs if l not in TIER_LANGS]
-        if unknown: raise SystemExit(f"unknown LANGS {unknown}; known: {TIER_LANGS}")
-        prog = routed.files("_progress/")
-        incomplete = [k for k in S if f"_progress/{k.replace(':', '__')}/complete.json" not in prog]
-        if incomplete and os.environ.get("ALLOW_INCOMPLETE") != "1" and not LOCAL_OUT:
-            raise SystemExit(f"routing is not complete for {incomplete}: finish MODE=route first (ALLOW_INCOMPLETE=1 to dedup anyway)")
-        for lang in langs:
-            try: dedup_language(lang, routed, out, done_out)
-            except Exception as e: print(f"   FAILED {lang}: {str(e)[:300]}"); traceback.print_exc(limit=3)
-            gc.collect()
+        run_dedup([l.strip() for l in (LANGS_SEL.split(",") if LANGS_SEL else TIER_LANGS) if l.strip()])
     elif MODE == "card":
         write_card(Store(ROUTED_REPO), Store(OUT_REPO))
     else:

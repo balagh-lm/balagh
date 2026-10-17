@@ -49,3 +49,33 @@ for name, sp in SPECS.items():
                     {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [], "source": setup},
                     {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [], "source": [src]}]}
     out = os.path.join(sp["dir"], name + ".ipynb"); json.dump(nb, open(out, "w", encoding="utf-8"), indent=1, ensure_ascii=False); print("wrote", out)
+
+# ------------------------------------------------------------------ ready-made Kaggle job notebooks (knobs preset, import by URL, Save & Run All)
+KDIR = os.path.join(os.path.dirname(HERE), "kaggle"); os.makedirs(KDIR, exist_ok=True)
+JOBS = {   # job name -> (script spec, knob overrides, one-line purpose)
+    "k01_paklid":          ("01_build_corpus", {"MODE": "paklid"}, "Train PakLID v1 (CPU, ~1 h)"),
+    "k02_route_urdu_fw2":  ("01_build_corpus", {"MODE": "route", "SOURCES": "group:urdu-fw2", "THEN_DEDUP": "1"}, "Route FineWeb-2 Urdu (waits for PakLID)"),
+    "k03_route_urdu_hplt": ("01_build_corpus", {"MODE": "route", "SOURCES": "group:urdu-hplt", "THEN_DEDUP": "1"}, "Route HPLT 2.0 + GlotCC Urdu"),
+    "k04_route_urdu_sangraha": ("01_build_corpus", {"MODE": "route", "SOURCES": "group:urdu-sangraha", "THEN_DEDUP": "1"}, "Route Sangraha verified Urdu"),
+    "k05_route_pak_mid":   ("01_build_corpus", {"MODE": "route", "SOURCES": "group:pak-mid", "THEN_DEDUP": "1"}, "Route Pashto + Sindhi sources"),
+    "k06_route_pak_small": ("01_build_corpus", {"MODE": "route", "SOURCES": "group:pak-small", "THEN_DEDUP": "1"}, "Route Wikipedia, transcripts, GlotCC and small-language buckets"),
+    "k07_dedup_all":       ("01_build_corpus", {"MODE": "dedup", "LANGS": ""}, "Dedup + decontaminate every language and write the card (rerun if a routing job could not)"),
+    "k08_sft_data":        ("03_sft_data", {}, "Build balagh-lm/sft-v0"),
+    "k09_eval_baselines_t4": ("balagh_eval_baselines", {}, "Baseline evals on Kaggle GPU T4 x2 (set Accelerator: GPU T4 x2)"),
+    "k10_tok_urdu":        ("05_tokenize_export", {"SOURCES": "urd_Arab", "TOTAL_TOKENS": "8e9"}, "Tokenise Urdu (after corpus-v1 exists)"),
+    "k11_tok_replay":      ("05_tokenize_export", {"SOURCES": "en_edu,code,math", "TOTAL_TOKENS": "8e9"}, "Tokenise English/code/maths replay"),
+    "k12_tok_rest":        ("05_tokenize_export", {"SOURCES": "pbt_Arab,snd_Arab,pnb_Arab,skr_Arab,bal_Arab,brh_Arab,kas_Arab,hno_Arab,phr_Arab,urd_Latn", "TOTAL_TOKENS": "8e9"}, "Tokenise the other languages"),
+    "k13_tok_manifest":    ("05_tokenize_export", {"MODE": "manifest", "TOTAL_TOKENS": "8e9"}, "Write the token manifest (after k10-k12)"),
+}
+for job, (spec_name, knobs, purpose) in JOBS.items():
+    sp = SPECS[spec_name]
+    src = open(os.path.join(sp["dir"], spec_name + ".py"), encoding="utf-8").read()
+    allk = dict(sp["knobs"]); allk.update(knobs)
+    setup = [f"!pip -q install -U {sp['pip']}\n", "import os\n"] + [f"os.environ['{k}'] = '{v}'\n" for k, v in allk.items()] + SECRET_CHECK
+    setup.append("assert _tok(), 'attach the HF_TOKEN secret: Add-ons > Secrets'\nprint('HF token found')" if sp["need_token"] else "print('HF token found' if _tok() else 'no HF token')")
+    nb = {"nbformat": 4, "nbformat_minor": 5, "metadata": {"kernelspec": {"name": "python3", "display_name": "Python 3", "language": "python"}},
+          "cells": [{"cell_type": "markdown", "metadata": {}, "source": [f"# Balagh job {job}: {purpose}\n", "\n", sp["note"] + "\n", "\n", f"Knobs preset: `{json.dumps(knobs)}`. Generated from `phase0/colab/{spec_name}.py`."]},
+                    {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [], "source": setup},
+                    {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [], "source": [src]}]}
+    json.dump(nb, open(os.path.join(KDIR, job + ".ipynb"), "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+print("wrote", len(JOBS), "Kaggle job notebooks to", KDIR)
