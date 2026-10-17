@@ -16,11 +16,26 @@ from huggingface_hub import HfApi
 
 OUT = os.environ.get("BALAGH_SFT_REPO", "balagh-lm/sft-v0")
 random.seed(0)
-def hf_token():
+def secret(k):
+    """Colab Secrets, then Kaggle Secrets, then the environment, then a local `hf auth login`."""
     try:
-        from google.colab import userdata; return userdata.get("HF_TOKEN")
-    except Exception: return os.environ.get("HF_TOKEN")
-TOKEN = hf_token(); api = HfApi(token=TOKEN); api.create_repo(OUT, repo_type="dataset", exist_ok=True)
+        from google.colab import userdata
+        v = userdata.get(k)
+        if v: return v
+    except Exception: pass
+    try:
+        from kaggle_secrets import UserSecretsClient
+        v = UserSecretsClient().get_secret(k)
+        if v: return v
+    except Exception: pass
+    if os.environ.get(k): return os.environ[k]
+    if k == "HF_TOKEN":
+        try:
+            from huggingface_hub import get_token
+            return get_token()
+        except Exception: return None
+    return None
+TOKEN = secret("HF_TOKEN"); api = HfApi(token=TOKEN); api.create_repo(OUT, repo_type="dataset", exist_ok=True)
 
 DIG = {ord(c): str(i) for i, c in enumerate("٠١٢٣٤٥٦٧٨٩")}; DIG.update({ord(c): str(i) for i, c in enumerate("۰۱۲۳۴۵۶۷۸۹")})
 def norm(t): return re.sub(r"[ \t]+", " ", t.translate(DIG).replace("ـ", "").replace("‌", "")).strip()

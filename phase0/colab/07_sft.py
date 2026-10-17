@@ -1,0 +1,267 @@
+# Balagh step 7: supervised fine-tuning (chat) of the continued-pretrained base, or of Qwen3.5-2B-Base directly
+# (Path B). Colab A100 (40 GB is enough) or any Ampere+ GPU; bf16 autocast + fp32 master weights + 8-bit AdamW.
+#
+# Data: balagh-lm/sft-v0 (03_sft_data: Alif, Aya, Sindhi chat, Roman-Urdu transliteration, SMOL translation)
+# plus English instructions from HuggingFaceTB/smoltalk (Apache-2.0) at ENGLISH_SHARE of supervised TOKENS.
+# Format: ChatML with Qwen's control tokens (<|im_start|>, <|im_end|>, trained in the base per its card); loss on
+# assistant turns only; conversations packed greedily into SEQ-token rows.
+# Resumable: a checkpoint (fp32 weights + optimizer) goes to the private Hub repo CKPT_REPO every CKPT_EVERY steps
+# and when MAX_HOURS is reached; rerunning the notebook continues from it. The data order is a function of the step.
+# After training the model is saved and pushed FIRST, then dev loss and a generation-based UrduMMLU check (the
+# invalid-answer rate is a release gate) are added to its metadata.
+#
+# Env: BASE_REPO [balagh-lm/balagh-nano-ckpt], BASE_SUBFOLDER [balagh-nano-v0/final] (Path B: BASE_REPO=Qwen/Qwen3.5-2B-Base,
+# BASE_SUBFOLDER=''), SFT_DATA [balagh-lm/sft-v0], SFT_REPO [balagh-lm/balagh-nano-v0-instruct], CKPT_REPO [SFT_REPO-ckpt],
+# EPOCHS [2], LR [1e-5], SEQ [4096], BATCH_TOKENS [131072], ENGLISH_SHARE [0.15], CKPT_EVERY [150], MAX_HOURS [20],
+# MAX_EXAMPLES [0 = all], GEN_EVAL_N [300], SMOKE [0], ALLOW_NO_ENGLISH [0].
+
+import os, json, math, time, random, re, glob, gc, shutil
+import numpy as np
+import torch, torch.nn.functional as F
+
+E = os.environ.get
+BASE_REPO = E("BASE_REPO", "balagh-lm/balagh-nano-ckpt"); BASE_SUB = E("BASE_SUBFOLDER", "balagh-nano-v0/final") or None
+SFT_DATA = E("SFT_DATA", "balagh-lm/sft-v0"); SFT_REPO = E("SFT_REPO", "balagh-lm/balagh-nano-v0-instruct"); CKPT_REPO = E("CKPT_REPO", SFT_REPO + "-ckpt")
+EPOCHS = float(E("EPOCHS", 2)); LR = float(E("LR", 1e-5)); SEQ = int(E("SEQ", 4096)); BATCH_TOKENS = int(E("BATCH_TOKENS", 131072))
+ENGLISH_SHARE = float(E("ENGLISH_SHARE", 0.15)); MAX_EX = int(E("MAX_EXAMPLES", 0)); GEN_N = int(E("GEN_EVAL_N", 300))
+CKPT_EVERY = int(E("CKPT_EVERY", 150)); MAX_HOURS = float(E("MAX_HOURS", 20)); SMOKE = E("SMOKE", "0") == "1"
+if SMOKE: MAX_EX, EPOCHS, GEN_N, CKPT_EVERY = 400, 1, 20, 10**9
+OUT = "/content/sft" if os.path.isdir("/content") else "./sft-out"; os.makedirs(OUT, exist_ok=True)
+T0 = time.time(); random.seed(0); torch.manual_seed(0)
+
+def secret(k):
+    for get in (lambda: __import__("google.colab.userdata", fromlist=["get"]).get(k), lambda: __import__("kaggle_secrets").UserSecretsClient().get_secret(k)):
+        try:
+            v = get()
+            if v: return v
+        except Exception: pass
+    if os.environ.get(k): return os.environ[k]
+    try:
+        from huggingface_hub import get_token; return get_token()
+    except Exception: return None
+TOKEN = secret("HF_TOKEN")
+assert TOKEN, "HF_TOKEN missing (Colab Secrets)"
+assert torch.cuda.is_available() and torch.cuda.get_device_capability(0)[0] >= 8, "needs an Ampere or newer GPU (A100/L4/H100): Qwen3.5's DeltaNet kernels need bf16"
+DEV = torch.device("cuda")
+
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from datasets import load_dataset
+from huggingface_hub import HfApi, hf_hub_download
+api = HfApi(token=TOKEN)
+def with_retry(fn, what, tries=4):
+    for a in range(tries):
+        try: return fn()
+        except Exception as e:
+            if a == tries - 1: raise
+            print(f"   {what} retry {a + 1}: {str(e)[:150]}", flush=True); time.sleep(30 * 2 ** a)
+
+mm = with_retry(lambda: load_dataset("MBZUAI/UrduMMLU", split="test", token=TOKEN), "UrduMMLU")   # fail fast, before any training
+kw = {"token": TOKEN, **({"subfolder": BASE_SUB} if BASE_SUB else {})}
+tok = AutoTokenizer.from_pretrained(BASE_REPO, **kw)
+model = AutoModelForCausalLM.from_pretrained(BASE_REPO, dtype=torch.float32, **kw).to(DEV)
+model.config.use_cache = False; model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+IM_START, IM_END = tok.convert_tokens_to_ids("<|im_start|>"), tok.convert_tokens_to_ids("<|im_end|>")
+assert IM_START is not None and IM_END is not None and IM_START != tok.unk_token_id, "ChatML control tokens missing from the tokenizer"
+NL = tok.encode("\n", add_special_tokens=False)
+TIED = model.get_output_embeddings().weight.data_ptr() == model.get_input_embeddings().weight.data_ptr()
+print(f"base {BASE_REPO}/{BASE_SUB or ''}: {sum(p.numel() for p in model.parameters())/1e9:.2f}B params, {type(model).__name__}, tied={TIED}")
+
+SYSTEM_DEFAULT = "You are Balagh, a helpful assistant for the languages of Pakistan. Answer in the language of the question unless asked otherwise."
+def encode_chat(messages):
+    """ChatML ids + labels (-100 everywhere except assistant content and its <|im_end|>)."""
+    if messages and messages[0]["role"] != "system": messages = [{"role": "system", "content": SYSTEM_DEFAULT}] + messages
+    ids, labels = [], []
+    for m in messages:
+        role = m["role"] if m["role"] in ("system", "user", "assistant") else "user"
+        head = [IM_START] + tok.encode(role, add_special_tokens=False) + NL
+        body = tok.encode(str(m["content"]).strip(), add_special_tokens=False) + [IM_END] + NL
+        ids += head + body
+        labels += [-100] * len(head) + (body[:-1] + [-100] if role == "assistant" else [-100] * len(body))
+    return ids, labels
+
+CHAT_TEMPLATE = ("{% for m in messages %}{% if loop.first and m['role'] != 'system' %}<|im_start|>system\n" + SYSTEM_DEFAULT + "<|im_end|>\n{% endif %}"
+                 "<|im_start|>{{ m['role'] }}\n{{ m['content'] | trim }}<|im_end|>\n{% endfor %}{% if add_generation_prompt %}<|im_start|>assistant\n{% endif %}")
+
+# ------------------------------------------------------------------ data (deterministic: same rows and packing on every rerun)
+def load_jsonl(name):
+    p = with_retry(lambda: hf_hub_download(SFT_DATA, f"{name}.jsonl", repo_type="dataset", token=TOKEN), f"sft {name}")
+    return [json.loads(l) for l in open(p, encoding="utf-8") if l.strip()]
+train_rows, dev_rows = load_jsonl("train"), load_jsonl("dev")
+if MAX_EX: random.Random(0).shuffle(train_rows); train_rows = train_rows[:MAX_EX]; dev_rows = dev_rows[:200]
+
+def encode_rows(rows):
+    enc = []
+    for r in rows:
+        ids, lab = encode_chat(r["messages"])
+        if len(ids) > SEQ: ids, lab = ids[:SEQ], lab[:SEQ]
+        if any(l != -100 for l in lab): enc.append((ids, lab))
+    return enc
+native = encode_rows(train_rows)
+native_sup = sum(sum(1 for x in l if x != -100) for _, l in native)
+eng_target = int(native_sup * ENGLISH_SHARE / max(1e-9, 1 - ENGLISH_SHARE))
+eng = []
+if eng_target:
+    for attempt in range(3):
+        eng, got = [], 0
+        try:
+            for r in load_dataset("HuggingFaceTB/smoltalk", "all", split="train", streaming=True, token=TOKEN):
+                msgs = r.get("messages") or []
+                if not (2 <= len(msgs) <= 8 and sum(len(m["content"]) for m in msgs) < 6000): continue
+                e = encode_rows([{"messages": msgs}])
+                if e: eng += e; got += sum(1 for x in e[0][1] if x != -100)
+                if got >= eng_target: break
+            break
+        except Exception as ex: print("English replay retry", attempt + 1, str(ex)[:120]); time.sleep(30 * (attempt + 1))
+    eng_sup = sum(sum(1 for x in l if x != -100) for _, l in eng)
+    if eng_sup < 0.9 * eng_target and E("ALLOW_NO_ENGLISH") != "1":
+        raise SystemExit(f"English replay short: {eng_sup:,} of {eng_target:,} supervised tokens (ALLOW_NO_ENGLISH=1 to train without it)")
+eng_sup = sum(sum(1 for x in l if x != -100) for _, l in eng)
+print(f"SFT: native {len(native):,} conversations ({native_sup/1e6:.1f}M supervised tokens) + English {len(eng):,} ({eng_sup/1e6:.1f}M); dev {len(dev_rows):,}")
+
+def pack(enc, seed):
+    enc = list(enc); random.Random(seed).shuffle(enc)
+    packed, cur_i, cur_l = [], [], []
+    for ids, lab in enc:
+        if len(cur_i) + len(ids) > SEQ: packed.append((cur_i, cur_l)); cur_i, cur_l = [], []
+        cur_i += ids; cur_l += lab
+    if cur_i: packed.append((cur_i, cur_l))
+    return packed
+train_packed = pack(native + eng, seed=0); dev_packed = pack(encode_rows(dev_rows), seed=1)
+n_tok = sum(len(i) for i, _ in train_packed)
+print(f"packed {len(train_packed):,} rows, {n_tok/1e6:.1f}M tokens per epoch")
+
+def to_batch(rows):
+    L = max(len(i) for i, _ in rows)
+    ids = torch.full((len(rows), L), tok.pad_token_id if tok.pad_token_id is not None else IM_END, dtype=torch.long); lab = torch.full((len(rows), L), -100, dtype=torch.long)
+    for k, (i, l) in enumerate(rows): ids[k, :len(i)] = torch.tensor(i); lab[k, :len(l)] = torch.tensor(l)
+    return ids.to(DEV), lab.to(DEV)
+
+def loss_of(ids, lab, chunk=4096):
+    with torch.autocast("cuda", dtype=torch.bfloat16):
+        h = model.model(input_ids=ids).last_hidden_state
+    W = model.get_output_embeddings().weight
+    h = h[:, :-1].reshape(-1, h.shape[-1]); y = lab[:, 1:].reshape(-1)
+    keep = y != -100; h, y = h[keep], y[keep]
+    total = h.new_zeros((), dtype=torch.float32)
+    def ce(hc, yc):
+        with torch.autocast("cuda", dtype=torch.bfloat16): lg = F.linear(hc, W)
+        return F.cross_entropy(lg.float(), yc, reduction="sum")
+    for i in range(0, h.shape[0], chunk): total = total + torch.utils.checkpoint.checkpoint(ce, h[i:i + chunk], y[i:i + chunk], use_reentrant=False)
+    return total, y.numel()
+
+@torch.no_grad()
+def dev_loss():
+    model.eval(); tot = n = 0
+    for i in range(0, len(dev_packed), 2):
+        ids, lab = to_batch(dev_packed[i:i + 2]); l, k = loss_of(ids, lab); tot += float(l); n += k
+    model.train(); return tot / max(1, n)
+
+# ------------------------------------------------------------------ optimizer, schedule, resume
+try:
+    import bitsandbytes as bnb
+    opt = bnb.optim.AdamW8bit(model.parameters(), lr=LR, betas=(0.9, 0.95), weight_decay=0.0); print("optimizer: AdamW8bit")
+except Exception as e:
+    print("bitsandbytes unavailable, fp32 AdamW (needs ~30 GB):", str(e)[:80]); opt = torch.optim.AdamW(model.parameters(), lr=LR, betas=(0.9, 0.95), weight_decay=0.0, fused=True)
+rows_per_step = max(1, BATCH_TOKENS // SEQ); N = len(train_packed)
+steps = max(1, int(math.ceil(N / rows_per_step) * EPOCHS)); warm = max(1, int(0.03 * steps))
+lr_at = lambda s: LR * (s + 1) / warm if s < warm else LR * (0.1 + 0.9 * 0.5 * (1 + math.cos(math.pi * (s - warm) / max(1, steps - warm))))
+def rows_for(s):
+    """Packed-row indices for step s: a fresh seeded permutation each epoch, so a resumed run sees identical batches."""
+    out = []; start = s * rows_per_step
+    while len(out) < rows_per_step:
+        ep, off = divmod(start + len(out), N); perm = np.random.default_rng(100 + ep).permutation(N)
+        take = min(rows_per_step - len(out), N - off); out += perm[off:off + take].tolist()
+    return out
+CFG = {"base": f"{BASE_REPO}/{BASE_SUB or ''}", "steps": steps, "rows_per_step": rows_per_step, "n_rows": N, "seq": SEQ, "lr": LR}
+start = 0
+if not SMOKE:
+    api.create_repo(CKPT_REPO, private=True, exist_ok=True)
+    cks = sorted({f.split("/")[0] for f in api.list_repo_files(CKPT_REPO) if f.startswith("step-")}, key=lambda d: int(d.split("-")[1]))
+    if cks:
+        p = with_retry(lambda: hf_hub_download(CKPT_REPO, f"{cks[-1]}/ckpt.pt", token=TOKEN, local_dir=os.path.join(OUT, "resume")), "checkpoint download")
+        ck = torch.load(p, map_location="cpu", weights_only=False)
+        if ck["cfg"] != CFG: raise SystemExit(f"checkpoint {cks[-1]} was made with different settings {ck['cfg']} vs {CFG}: delete {CKPT_REPO} to start over")
+        model.load_state_dict(ck["model"]); opt.load_state_dict(ck["opt"]); start = ck["step"]; del ck; os.remove(p); gc.collect()
+        print(f"resumed from {cks[-1]} (step {start}/{steps})")
+
+def save_ckpt(s):
+    d = os.path.join(OUT, f"step-{s}"); os.makedirs(d, exist_ok=True)
+    torch.save({"model": model.state_dict(), "opt": opt.state_dict(), "step": s, "cfg": CFG}, os.path.join(d, "ckpt.pt.tmp")); os.replace(os.path.join(d, "ckpt.pt.tmp"), os.path.join(d, "ckpt.pt"))
+    with_retry(lambda: api.upload_folder(folder_path=d, repo_id=CKPT_REPO, path_in_repo=f"step-{s}", commit_message=f"SFT checkpoint step {s}/{steps}"), "checkpoint upload")
+    for old in {f.split("/")[0] for f in api.list_repo_files(CKPT_REPO) if f.startswith("step-")} - {f"step-{s}"}:
+        try: api.delete_folder(old, repo_id=CKPT_REPO, commit_message=f"drop {old}")
+        except Exception as e: print("   could not delete", old, str(e)[:80])
+    shutil.rmtree(d, ignore_errors=True); print(f"checkpoint step {s} saved to {CKPT_REPO}", flush=True)
+
+# ------------------------------------------------------------------ train
+print(f"{steps} steps x {rows_per_step} rows ({BATCH_TOKENS:,} tokens), LR {LR}, warmup {warm}, starting at {start}")
+d0 = dev_loss() if start == 0 else None
+if d0 is not None: print(f"dev loss before SFT: {d0:.4f}")
+t0 = time.time(); model.train(); MICRO = int(E("MICRO_ROWS", 2)); paused = False
+for s in range(start, steps):
+    for g in opt.param_groups: g["lr"] = lr_at(s)
+    idx = rows_for(s); rows = [train_packed[j] for j in idx]
+    n_sup = sum(sum(1 for x in l[1:] if x != -100) for _, l in rows)   # normalise by supervised tokens of the whole step
+    tot = 0.0
+    for k in range(0, len(rows), MICRO):
+        ids, lab = to_batch(rows[k:k + MICRO]); l, _ = loss_of(ids, lab); (l / max(1, n_sup)).backward(); tot += float(l)
+    gn = float(torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0))
+    if not math.isfinite(gn): opt.zero_grad(set_to_none=True); print(f"step {s+1}: non-finite gradient, skipped"); continue
+    opt.step(); opt.zero_grad(set_to_none=True)
+    if s % 10 == 0 or s == steps - 1:
+        print(f"step {s+1}/{steps} loss {tot/max(1,n_sup):.4f} lr {lr_at(s):.2e} {(s+1-start)*BATCH_TOKENS/(time.time()-t0):,.0f} tok/s mem {torch.cuda.max_memory_allocated()/2**30:.1f}G", flush=True)
+    if not SMOKE and (s + 1) % CKPT_EVERY == 0 and s + 1 < steps: save_ckpt(s + 1)
+    if (time.time() - T0) / 3600 > MAX_HOURS and s + 1 < steps:
+        if not SMOKE: save_ckpt(s + 1)
+        print(f"MAX_HOURS={MAX_HOURS} reached at step {s+1}: rerun this notebook to continue"); paused = True; break
+if paused: raise SystemExit(0)
+
+# ------------------------------------------------------------------ save + push FIRST, then evaluate
+d = os.path.join(OUT, "model"); tok.chat_template = CHAT_TEMPLATE
+sd = {k: v.detach().to("cpu", torch.bfloat16) for k, v in model.state_dict().items()}
+if TIED: sd.pop("lm_head.weight", None)
+model.generation_config.eos_token_id = [IM_END]; model.save_pretrained(d, state_dict=sd, safe_serialization=True); tok.save_pretrained(d); del sd
+cp = os.path.join(d, "config.json"); c = json.load(open(cp)); c["dtype"] = "bfloat16"; c["use_cache"] = True
+if isinstance(c.get("text_config"), dict): c["text_config"]["use_cache"] = True
+json.dump(c, open(cp, "w"), indent=2)
+meta = {"base": CFG["base"], "sft_data": SFT_DATA, "epochs": EPOCHS, "lr": LR, "english_share_tokens": ENGLISH_SHARE, "english_conversations": len(eng),
+        "english_supervised_tokens": eng_sup, "native_supervised_tokens": native_sup, "steps": steps}
+json.dump(meta, open(os.path.join(d, "balagh_sft_meta.json"), "w"), indent=1)
+if not SMOKE:
+    api.create_repo(SFT_REPO, private=True, exist_ok=True)
+    with_retry(lambda: api.upload_folder(folder_path=d, repo_id=SFT_REPO, commit_message=f"SFT from {CFG['base']} ({steps} steps)"), "model upload")
+    print("pushed", SFT_REPO, "(private until release)")
+
+try:
+    d1 = dev_loss(); meta.update({"dev_loss_before": d0, "dev_loss_after": d1}); print(f"dev loss after SFT: {d1:.4f} (before {d0})")
+except Exception as e: meta["dev_loss_error"] = str(e)[:200]
+
+# generation-based UrduMMLU: the invalid-answer rate is a release gate (< 2%)
+model.eval(); model.config.use_cache = True
+LET = re.compile(r"\b([A-F])\b"); ok = inv = n = 0
+try:
+    idx = list(range(len(mm))); random.Random(1).shuffle(idx)
+    for i in idx[:GEN_N]:
+        try:
+            r = mm[i]; opts = {k: v for k, v in (r["options"] or {}).items() if v}
+            if r["correct_key"] not in opts: continue
+            q = r["question"].strip() + "\n" + "\n".join(f"{k}. {v}" for k, v in sorted(opts.items())) + "\n\nصرف درست جواب کا حرف لکھیں (A, B, C, D)۔"
+            prompt = tok.apply_chat_template([{"role": "user", "content": q}], chat_template=CHAT_TEMPLATE, tokenize=False, add_generation_prompt=True)
+            enc = tok(prompt, return_tensors="pt", add_special_tokens=False).to(DEV)
+            with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
+                out = model.generate(**enc, max_new_tokens=12, do_sample=False, eos_token_id=IM_END, pad_token_id=IM_END)
+            ans = tok.decode(out[0, enc["input_ids"].shape[1]:], skip_special_tokens=True).strip()
+        except Exception as e:
+            ans = ""; print("   item error:", str(e)[:100])
+        m = LET.search(ans.upper()); n += 1
+        if not m or m.group(1) not in opts: inv += 1
+        elif m.group(1) == r["correct_key"]: ok += 1
+    meta["gen_urdummlu"] = {"n": n, "accuracy": round(ok / max(1, n), 4), "invalid_rate": round(inv / max(1, n), 4)}
+except Exception as e:
+    meta["gen_urdummlu"] = {"n": 0, "error": str(e)[:200]}
+print("generation UrduMMLU:", meta["gen_urdummlu"], "(gate: invalid < 2%, n > 0; Qalb 31.5-35.5 accuracy)")
+json.dump(meta, open(os.path.join(d, "balagh_sft_meta.json"), "w"), indent=1)
+if not SMOKE:
+    with_retry(lambda: api.upload_file(path_or_fileobj=os.path.join(d, "balagh_sft_meta.json"), path_in_repo="balagh_sft_meta.json", repo_id=SFT_REPO,
+                                       commit_message=f"eval: {meta.get('gen_urdummlu')}"), "metadata upload")
+print("DONE")
