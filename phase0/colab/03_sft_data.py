@@ -38,7 +38,9 @@ def secret(k):
 TOKEN = secret("HF_TOKEN"); api = HfApi(token=TOKEN); api.create_repo(OUT, repo_type="dataset", exist_ok=True)
 
 DIG = {ord(c): str(i) for i, c in enumerate("٠١٢٣٤٥٦٧٨٩")}; DIG.update({ord(c): str(i) for i, c in enumerate("۰۱۲۳۴۵۶۷۸۹")})
-def norm(t): return re.sub(r"[ \t]+", " ", t.translate(DIG).replace("ـ", "").replace("‌", "")).strip()
+def norm(t):   # None-safe: some upstream rows have empty fields (Roman-Urdu-Parl stopped at ~19k rows on one)
+    t = "" if t is None else str(t)
+    return re.sub(r"[ \t]+", " ", t.translate(DIG).replace("ـ", "").replace("‌", "")).strip()
 
 rows = []
 def add(messages, source, licence, lang, register, synthetic=False):
