@@ -12,15 +12,15 @@ SECRET_CHECK = [
     "    except Exception: return os.environ.get('HF_TOKEN')\n",
 ]
 SPECS = {
-    "01_build_corpus": dict(dir=HERE, pip="datasets huggingface_hub pyarrow datasketch xxhash scikit-learn numpy joblib",
+    "01_build_corpus": dict(dir=HERE, pip="datasets huggingface_hub datasketch xxhash",
         title="Balagh corpus builder: PakLID v1, routing, dedup, decontamination", need_token=True,
         note=("Kaggle: Accelerator **None** (CPU), Internet **on**, Add-ons > Secrets: `HF_TOKEN` (write, balagh-lm). Save & Run All (batch) so it runs with your PC off.\n\n"
               "Order: `MODE='paklid'` once; then `MODE='route'` in five copies with `SOURCES` = `group:urdu-fw2`, `group:urdu-hplt`, `group:urdu-sangraha`, `group:pak-mid`, `group:pak-small`; "
               "then `MODE='dedup'` with `LANGS` = `urd_Arab` | `pbt_Arab,snd_Arab` | `urd_Latn,pnb_Arab,skr_Arab,bal_Arab,brh_Arab,kas_Arab,hno_Arab,phr_Arab`; then `MODE='card'`. Every mode resumes where it stopped."),
         knobs={"MODE": "paklid", "SOURCES": "all", "LANGS": "", "MAX_UNITS": "0", "PAKLID_PER_SOURCE": "0"}),
-    "03_sft_data": dict(dir=HERE, pip="datasets huggingface_hub pyarrow", title="Balagh SFT data: native instructions -> balagh-lm/sft-v0", need_token=True,
+    "03_sft_data": dict(dir=HERE, pip="datasets huggingface_hub", title="Balagh SFT data: native instructions -> balagh-lm/sft-v0", need_token=True,
         note="Kaggle CPU or Colab CPU. Needs `HF_TOKEN` (write). About 20 minutes.", knobs={}),
-    "05_tokenize_export": dict(dir=HERE, pip="'transformers>=5.20' huggingface_hub pyarrow numpy", title="Balagh tokenisation: corpus-v1 + replay -> packed Qwen3.5 token shards", need_token=True,
+    "05_tokenize_export": dict(dir=HERE, pip="'transformers>=5.20' huggingface_hub", title="Balagh tokenisation: corpus-v1 + replay -> packed Qwen3.5 token shards", need_token=True,
         note=("Kaggle CPU (or Colab CPU High-RAM). Needs `HF_TOKEN` (write). Run after corpus-v1 is complete. Parallel copies: `SOURCES='urd_Arab'` | `SOURCES='en_edu,code,math'` | "
               "`SOURCES='pbt_Arab,snd_Arab,pnb_Arab,skr_Arab,bal_Arab,brh_Arab,kas_Arab,hno_Arab,phr_Arab,urd_Latn'`; then one run with `MODE='manifest'`. "
               "Set `TOTAL_TOKENS` from the AWS pilot's measured throughput (plan section 3)."),
@@ -74,7 +74,7 @@ for job, (spec_name, knobs, purpose) in JOBS.items():
     # tiny launcher: Kaggle's importer chokes on very large cells, so the script is fetched from GitHub at run time
     # and executed in the notebook's own namespace (multiprocessing workers then find its functions)
     NL = "\n"
-    setup = [f"!pip -q install -U {sp['pip']}" + NL, "import os, urllib.request" + NL] + [f"os.environ['{k}'] = '{v}'" + NL for k, v in allk.items()] + SECRET_CHECK
+    setup = [f"!pip -q install -U {sp['pip']}  # numpy/scikit-learn/pyarrow come from the image: upgrading them in a live kernel breaks imports" + NL, "import os, urllib.request" + NL] + [f"os.environ['{k}'] = '{v}'" + NL for k, v in allk.items()] + SECRET_CHECK
     setup.append("assert _tok(), 'attach the HF_TOKEN secret: Add-ons > Secrets'" + NL + "print('HF token found')" if sp["need_token"] else "print('HF token found' if _tok() else 'no HF token')")
     run = ["REF = os.environ.get('BALAGH_REF', 'main')" + NL,
            f"_src = urllib.request.urlopen(f'https://raw.githubusercontent.com/balagh-lm/balagh/{{REF}}/{rel}').read().decode('utf-8')" + NL,
