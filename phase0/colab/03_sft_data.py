@@ -57,11 +57,16 @@ except Exception as e: print("alif skip", str(e)[:100])
 # 2. Aya dataset (human-written) for Pakistani languages
 try:
     d = load_dataset("CohereLabs/aya_dataset", split="train", token=TOKEN)
-    keep = {"Urdu": "urd", "Punjabi": "pan", "Pashto": "pbt", "Sindhi": "snd", "Persian": None}
+    # Aya's own language names (checked Oct 2026: "Southern Pashto", "Panjabi"); the older spellings are kept in case they change
+    keep = {"Urdu": "urd", "Southern Pashto": "pbt", "Pashto": "pbt", "Sindhi": "snd", "Panjabi": "pnb", "Punjabi": "pnb"}
+    ARABIC = re.compile(r"[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]")
     n = collections.Counter()
     for r in d:
         lang = keep.get(r.get("language"))
         if not lang: continue
+        if lang == "pnb":   # Aya's Panjabi is mostly Gurmukhi; Pakistan writes Punjabi in Shahmukhi, so keep only Arabic-script rows
+            txt = f"{r['inputs']} {r['targets']}"; letters = sum(ch.isalpha() for ch in txt)
+            if not letters or len(ARABIC.findall(txt)) / letters < 0.5: n["pan_gurmukhi_skipped"] += 1; continue
         add([{"role": "user", "content": norm(r["inputs"])}, {"role": "assistant", "content": norm(r["targets"])}], "aya-dataset", "Apache-2.0", lang, "native"); n[lang] += 1
     print("aya:", dict(n))
 except Exception as e: print("aya skip", str(e)[:100])
@@ -102,10 +107,15 @@ LANGNAME = {"ur": ("Urdu", "urd"), "ps": ("Pashto", "pbt"), "brh": ("Brahui", "b
 for cfg in ["smoldoc__en_brh", "smoldoc__en_ps", "smoldoc__en_ur", "smolsent__en_brh", "smolsent__en_ks", "smolsent__en_pa-Arab", "smolsent__en_ur", "gatitos__en_bal", "gatitos__en_ks", "gatitos__en_pa-Arab", "gatitos__en_skr"]:
     try:
         d = load_dataset("google/smol", cfg, split="train", token=TOKEN); code = cfg.split("__en_")[-1]; name, lang = LANGNAME.get(code, (code, code)); n = 0
+        def joined(parts, sep):   # smoldoc: sentence lists plus the separator that follows each sentence
+            sep = sep or []
+            return "".join(str(x) + (sep[i] if i < len(sep) else " ") for i, x in enumerate(parts or [])).strip()
         for r in d:
-            src = r.get("src") or r.get("source") or r.get("en") or ""; tgt = r.get("trg") or r.get("target") or r.get(code) or ""
-            if isinstance(src, list): src = " ".join(src)
-            if isinstance(tgt, list): tgt = " ".join(tgt)
+            # smolsent: src/trg strings; smoldoc: srcs/trgs sentence lists + sep; gatitos: src string + trgs list of alternatives
+            src = r["src"] if isinstance(r.get("src"), str) else joined(r.get("srcs"), r.get("sep"))
+            if isinstance(r.get("trg"), str): tgt = r["trg"]
+            elif isinstance(r.get("trgs"), list) and r.get("srcs") is None: tgt = r["trgs"][0] if r["trgs"] else ""
+            else: tgt = joined(r.get("trgs"), r.get("sep"))
             src, tgt = norm(str(src)), norm(str(tgt))
             if len(src) < 3 or len(tgt) < 3: continue
             if cfg.startswith("gatitos") and random.random() < 0.7: continue   # word lists: keep a small share
