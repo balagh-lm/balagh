@@ -69,13 +69,20 @@ JOBS = {   # job name -> (script spec, knob overrides, one-line purpose)
 }
 for job, (spec_name, knobs, purpose) in JOBS.items():
     sp = SPECS[spec_name]
-    src = open(os.path.join(sp["dir"], spec_name + ".py"), encoding="utf-8").read()
+    rel = os.path.relpath(os.path.join(sp["dir"], spec_name + ".py"), os.path.dirname(os.path.dirname(HERE))).replace("\\", "/")
     allk = dict(sp["knobs"]); allk.update(knobs)
-    setup = [f"!pip -q install -U {sp['pip']}\n", "import os\n"] + [f"os.environ['{k}'] = '{v}'\n" for k, v in allk.items()] + SECRET_CHECK
-    setup.append("assert _tok(), 'attach the HF_TOKEN secret: Add-ons > Secrets'\nprint('HF token found')" if sp["need_token"] else "print('HF token found' if _tok() else 'no HF token')")
+    # tiny launcher: Kaggle's importer chokes on very large cells, so the script is fetched from GitHub at run time
+    # and executed in the notebook's own namespace (multiprocessing workers then find its functions)
+    NL = "\n"
+    setup = [f"!pip -q install -U {sp['pip']}" + NL, "import os, urllib.request" + NL] + [f"os.environ['{k}'] = '{v}'" + NL for k, v in allk.items()] + SECRET_CHECK
+    setup.append("assert _tok(), 'attach the HF_TOKEN secret: Add-ons > Secrets'" + NL + "print('HF token found')" if sp["need_token"] else "print('HF token found' if _tok() else 'no HF token')")
+    run = ["REF = os.environ.get('BALAGH_REF', 'main')" + NL,
+           f"_src = urllib.request.urlopen(f'https://raw.githubusercontent.com/balagh-lm/balagh/{{REF}}/{rel}').read().decode('utf-8')" + NL,
+           f"print('running {rel} @', REF, len(_src), 'chars')" + NL,
+           f"exec(compile(_src, '{spec_name}.py', 'exec'), globals())" + NL]
     nb = {"nbformat": 4, "nbformat_minor": 5, "metadata": {"kernelspec": {"name": "python3", "display_name": "Python 3", "language": "python"}},
-          "cells": [{"cell_type": "markdown", "metadata": {}, "source": [f"# Balagh job {job}: {purpose}\n", "\n", sp["note"] + "\n", "\n", f"Knobs preset: `{json.dumps(knobs)}`. Generated from `phase0/colab/{spec_name}.py`."]},
+          "cells": [{"cell_type": "markdown", "metadata": {}, "source": [f"# Balagh job {job}: {purpose}" + NL, NL, sp["note"] + NL, NL, f"Runs `{rel}` from github.com/balagh-lm/balagh (main) with these knobs: `{json.dumps(knobs)}`."]},
                     {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [], "source": setup},
-                    {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [], "source": [src]}]}
+                    {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [], "source": run}]}
     json.dump(nb, open(os.path.join(KDIR, job + ".ipynb"), "w", encoding="utf-8"), indent=1, ensure_ascii=False)
 print("wrote", len(JOBS), "Kaggle job notebooks to", KDIR)
