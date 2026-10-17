@@ -418,7 +418,11 @@ def train_paklid():
 def load_paklid():
     import joblib
     store = Store(PAKLID_REPO, "model")
-    if "paklid-v1.joblib" not in store.files(): raise SystemExit("PakLID v1 not found: run MODE=paklid first")
+    wait_min = int(os.environ.get("WAIT_PAKLID_MIN", 150))   # lets the routing jobs be queued while PakLID is still training
+    t0 = time.time()
+    while "paklid-v1.joblib" not in store.files():
+        if (time.time() - t0) / 60 > wait_min: raise SystemExit(f"PakLID v1 not found after {wait_min} min: run MODE=paklid first")
+        print("   waiting for PakLID v1 to appear on the Hub ...", flush=True); time.sleep(300)
     clf = joblib.load(store.download("paklid-v1.joblib"))
     missing = set(TIER_LANGS + CONFUSERS) - set(clf.classes_)
     if missing: raise SystemExit(f"PakLID model lacks labels {sorted(missing)}: retrain with MODE=paklid")

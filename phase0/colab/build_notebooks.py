@@ -30,7 +30,7 @@ SPECS = {
         note=("Colab **A100** (40 GB is enough) or L4. Needs `HF_TOKEN`. Path A: `BASE_REPO='balagh-lm/balagh-nano-ckpt'`, `BASE_SUBFOLDER='balagh-nano-v0/final'`. "
               "Path B: `BASE_REPO='Qwen/Qwen3.5-2B-Base'`, `BASE_SUBFOLDER=''`. Smoke test first with `SMOKE='1'` (400 examples, ~10 min)."),
         knobs={"BASE_REPO": "balagh-lm/balagh-nano-ckpt", "BASE_SUBFOLDER": "balagh-nano-v0/final", "SMOKE": "1"}),
-    "balagh_eval_baselines": dict(dir=os.path.dirname(HERE), pip="'transformers==5.20.1' 'flash-linear-attention==0.5.2' bitsandbytes accelerate datasets huggingface_hub && pip -q install --no-build-isolation 'causal-conv1d==1.7.0' || echo 'causal-conv1d unavailable: slower fallback'",
+    "balagh_eval_baselines": dict(dir=os.path.dirname(HERE), pip="'transformers==5.20.1' bitsandbytes accelerate datasets huggingface_hub && python -c \"import torch,sys; sys.exit(0 if torch.cuda.is_available() and torch.cuda.get_device_capability(0)[0] >= 8 else 1)\" && pip -q install 'flash-linear-attention==0.5.2' && pip -q install --no-build-isolation 'causal-conv1d==1.7.0' || echo 'no linear-attention kernels (T4 or build failed): PyTorch fallback'",
         title="Balagh evaluation: baselines and checkpoints, one protocol", need_token=False,
         note=("Colab A100/L4 (bf16), or Kaggle GPU T4 x2 (Qwen3.5 runs in fp32 there, slower). `HF_TOKEN` only for private checkpoints. "
               "Baselines: leave knobs empty. A training checkpoint: `CKPT_REPO='balagh-lm/balagh-nano-ckpt'`, `CKPT_SUBFOLDER='balagh-nano-v0/tokens-1.0B'`."),
