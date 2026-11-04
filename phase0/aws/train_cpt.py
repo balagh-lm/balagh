@@ -18,7 +18,7 @@
 # LR [6e-5], MIN_LR_RATIO [0.1], WARMUP_FRAC [0.01], SCHEDULE [cosine|constant], BATCH_SEQS [256], MICRO_SEQS [8],
 # SAVE_EVERY_MIN [30], EVAL_EVERY [1000], EVAL_SEQS [32], MILESTONE_TOKENS [1e9], MAX_HOURS [1e9], S3_URI, HF_CKPT_REPO
 # [balagh-lm/balagh-nano-ckpt], HF_PUSH [1], SEED [1234], EXCLUDE_SOURCES, REQUIRE_KERNELS [1], USE_HUB_KERNELS [0],
-# GRAD_CKPT [1], EXPECT_RESUME [0], ALLOW_CONFIG_CHANGE [0], SMOKE [0].
+# GRAD_CKPT [1], EXPECT_RESUME [0], ALLOW_CONFIG_CHANGE [0], SMOKE [0], OPTIM [adamw|adamw8bit: use for 4B on one 80 GB GPU].
 
 import os, sys, json, time, math, glob, signal, shutil, threading, subprocess, urllib.request, urllib.error, contextlib, hashlib
 import numpy as np
@@ -50,6 +50,7 @@ GRAD_CKPT = E("GRAD_CKPT", "1") == "1"
 EXPECT_RESUME = E("EXPECT_RESUME", "0") == "1"
 ALLOW_CONFIG_CHANGE = E("ALLOW_CONFIG_CHANGE", "0") == "1"
 CE_CHUNK = int(E("CE_CHUNK", 4096))
+OPTIM = E("OPTIM", "adamw")
 
 T0 = time.time()
 WORLD = int(E("WORLD_SIZE", 1)); RANK = int(E("RANK", 0)); LOCAL_RANK = int(E("LOCAL_RANK", 0))
@@ -215,10 +216,20 @@ decay, no_decay = [], []
 for n, p in model.named_parameters():
     if not p.requires_grad: continue
     (no_decay if p.ndim < 2 or "norm" in n.lower() or "A_log" in n or "dt_bias" in n else decay).append(p)
-opt = torch.optim.AdamW([{"params": decay, "weight_decay": 0.1}, {"params": no_decay, "weight_decay": 0.0}],
-                        lr=LR, betas=(0.9, 0.95), eps=1e-8, fused=True)
+groups = [{"params": decay, "weight_decay": 0.1}, {"params": no_decay, "weight_decay": 0.0}]
+if OPTIM == "adamw8bit":
+    # 4B on one 80 GB GPU: fp32 weights + grads (~34 GB) leave no room for fp32 Adam states (~34 GB) plus activations.
+    # Block-wise 8-bit states cut them ~4x; the embedding table keeps 32-bit states, as bitsandbytes recommends.
+    import bitsandbytes as bnb
+    bnb.optim.GlobalOptimManager.get_instance().register_parameters(model.get_input_embeddings().weight)
+    bnb.optim.GlobalOptimManager.get_instance().override_config(model.get_input_embeddings().weight, "optim_bits", 32)
+    opt = bnb.optim.AdamW8bit(groups, lr=LR, betas=(0.9, 0.95), eps=1e-8)
+elif OPTIM == "adamw":
+    opt = torch.optim.AdamW(groups, lr=LR, betas=(0.9, 0.95), eps=1e-8, fused=True)
+else: raise SystemExit(f"unknown OPTIM={OPTIM}")
+log(f"optimizer {type(opt).__name__}")
 CONFIG = {"run": RUN, "base": BASE, "seed": SEED, "total_steps": TOTAL_STEPS, "batch_seqs": BATCH_SEQS, "seq": SEQ, "lr": LR,
-          "schedule": SCHEDULE, "n_seqs": int(N_SEQS), "data_fp": DATA_FP}
+          "schedule": SCHEDULE, "n_seqs": int(N_SEQS), "data_fp": DATA_FP, "optim": OPTIM}
 
 # ------------------------------------------------------------------ checkpoints
 CK = os.path.join(OUT_DIR, "ckpt"); os.makedirs(CK, exist_ok=True)

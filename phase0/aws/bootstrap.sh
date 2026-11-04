@@ -115,7 +115,7 @@ if [ ! -x "$WORK/venv/bin/python" ]; then
   retry timeout 900 uv venv -q --seed -p 3.12 "$WORK/venv" || stop_group "venv create failed"
   # torch 2.10: causal-conv1d 1.7.0 publishes prebuilt wheels up to torch 2.10 (newer torch needs an nvcc build)
   retry timeout 1800 uv pip install -q -p "$WORK/venv/bin/python" "torch==2.10.0" --index-url https://download.pytorch.org/whl/cu128 || stop_group "torch install failed"
-  retry timeout 1800 uv pip install -q -p "$WORK/venv/bin/python" "transformers==5.20.1" "flash-linear-attention==0.5.2" "huggingface_hub[hf_xet]" safetensors numpy packaging ninja wheel setuptools || stop_group "pip install failed"
+  retry timeout 1800 uv pip install -q -p "$WORK/venv/bin/python" "transformers==5.20.1" "flash-linear-attention==0.5.2" "bitsandbytes==0.50.2" "huggingface_hub[hf_xet]" safetensors numpy packaging ninja wheel setuptools || stop_group "pip install failed"
   timeout 2400 uv pip install -q -p "$WORK/venv/bin/python" --no-build-isolation "causal-conv1d==1.7.0" || echo "causal-conv1d install failed"
 fi
 PY="$WORK/venv/bin/python"
