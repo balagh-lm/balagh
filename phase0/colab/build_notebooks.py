@@ -12,25 +12,25 @@ SECRET_CHECK = [
     "    except Exception: return os.environ.get('HF_TOKEN')\n",
 ]
 SPECS = {
-    "01_build_corpus": dict(dir=HERE, pip="datasets huggingface_hub datasketch xxhash",
+    "01_build_corpus": dict(dir=HERE, pip="datasets 'huggingface_hub<2' datasketch xxhash",
         title="Balagh corpus builder: PakLID v1, routing, dedup, decontamination", need_token=True,
         note=("Kaggle: Accelerator **None** (CPU), Internet **on**, Add-ons > Secrets: `HF_TOKEN` (write, balagh-lm). Save & Run All (batch) so it runs with your PC off.\n\n"
               "Order: `MODE='paklid'` once; then `MODE='route'` in five copies with `SOURCES` = `group:urdu-fw2`, `group:urdu-hplt`, `group:urdu-sangraha`, `group:pak-mid`, `group:pak-small`; "
               "then `MODE='dedup'` with `LANGS` = `urd_Arab` | `pbt_Arab,snd_Arab` | `urd_Latn,pnb_Arab,skr_Arab,bal_Arab,brh_Arab,kas_Arab,hno_Arab,phr_Arab`; then `MODE='card'`. Every mode resumes where it stopped."),
         knobs={"MODE": "paklid", "SOURCES": "all", "LANGS": "", "MAX_UNITS": "0", "PAKLID_PER_SOURCE": "0"}),
-    "03_sft_data": dict(dir=HERE, pip="datasets huggingface_hub", title="Balagh SFT data: native instructions -> balagh-lm/sft-v0", need_token=True,
+    "03_sft_data": dict(dir=HERE, pip="datasets 'huggingface_hub<2'", title="Balagh SFT data: native instructions -> balagh-lm/sft-v0", need_token=True,
         note="Kaggle CPU or Colab CPU. Needs `HF_TOKEN` (write). About 20 minutes.", knobs={}),
-    "05_tokenize_export": dict(dir=HERE, pip="'transformers>=5.20' huggingface_hub", title="Balagh tokenisation: corpus-v1 + replay -> packed Qwen3.5 token shards", need_token=True,
+    "05_tokenize_export": dict(dir=HERE, pip="'transformers>=5.20' 'huggingface_hub<2'", title="Balagh tokenisation: corpus-v1 + replay -> packed Qwen3.5 token shards", need_token=True,
         note=("Kaggle CPU (or Colab CPU High-RAM). Needs `HF_TOKEN` (write). Run after corpus-v1 is complete. Parallel copies: `SOURCES='urd_Arab'` | `SOURCES='en_edu,code,math'` | "
               "`SOURCES='pbt_Arab,snd_Arab,pnb_Arab,skr_Arab,bal_Arab,brh_Arab,kas_Arab,hno_Arab,phr_Arab,urd_Latn'`; then one run with `MODE='manifest'`. "
               "Set `TOTAL_TOKENS` from the AWS pilot's measured throughput (plan section 3)."),
         knobs={"MODE": "tokenize", "SOURCES": "", "TOTAL_TOKENS": "8e9"}),
-    "07_sft": dict(dir=HERE, pip="'transformers==5.20.1' 'flash-linear-attention==0.5.2' bitsandbytes datasets huggingface_hub accelerate && pip -q install --no-build-isolation 'causal-conv1d==1.7.0' || echo 'causal-conv1d unavailable: slower fallback'",
+    "07_sft": dict(dir=HERE, pip="'transformers==5.20.1' 'flash-linear-attention==0.5.2' bitsandbytes datasets 'huggingface_hub<2' accelerate && pip -q install --no-build-isolation 'causal-conv1d==1.7.0' || echo 'causal-conv1d unavailable: slower fallback'",
         title="Balagh SFT: chat fine-tuning + generation-based UrduMMLU gate", need_token=True,
         note=("Colab **A100** (40 GB is enough) or L4. Needs `HF_TOKEN`. Path A: `BASE_REPO='balagh-lm/balagh-nano-ckpt'`, `BASE_SUBFOLDER='balagh-nano-v0/final'`. "
               "Path B: `BASE_REPO='Qwen/Qwen3.5-2B-Base'`, `BASE_SUBFOLDER=''`. Smoke test first with `SMOKE='1'` (400 examples, ~10 min)."),
         knobs={"BASE_REPO": "balagh-lm/balagh-nano-ckpt", "BASE_SUBFOLDER": "balagh-nano-v0/final", "SMOKE": "1"}),
-    "balagh_eval_baselines": dict(dir=os.path.dirname(HERE), pip="'transformers==5.20.1' bitsandbytes accelerate datasets huggingface_hub && python -c \"import torch,sys; sys.exit(0 if torch.cuda.is_available() and torch.cuda.get_device_capability(0)[0] >= 8 else 1)\" && pip -q install 'flash-linear-attention==0.5.2' && pip -q install --no-build-isolation 'causal-conv1d==1.7.0' || echo 'no linear-attention kernels (T4 or build failed): PyTorch fallback'",
+    "balagh_eval_baselines": dict(dir=os.path.dirname(HERE), pip="'transformers==5.20.1' bitsandbytes accelerate datasets 'huggingface_hub<2' && python -c \"import torch,sys; sys.exit(0 if torch.cuda.is_available() and torch.cuda.get_device_capability(0)[0] >= 8 else 1)\" && pip -q install 'flash-linear-attention==0.5.2' && pip -q install --no-build-isolation 'causal-conv1d==1.7.0' || echo 'no linear-attention kernels (T4 or build failed): PyTorch fallback'",
         title="Balagh evaluation: baselines and checkpoints, one protocol", need_token=False,
         note=("Colab A100/L4 (bf16), or Kaggle GPU T4 x2 (Qwen3.5 runs in fp32 there, slower). `HF_TOKEN` only for private checkpoints. "
               "Baselines: leave knobs empty. A training checkpoint: `CKPT_REPO='balagh-lm/balagh-nano-ckpt'`, `CKPT_SUBFOLDER='balagh-nano-v0/tokens-1.0B'`."),
