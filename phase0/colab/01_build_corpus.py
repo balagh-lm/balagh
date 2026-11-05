@@ -132,7 +132,10 @@ class Store:
 # key -> upstream repo, path glob inside the repo, text column, metadata columns kept, licence, bucket
 # language (what upstream claims), dedup priority (lower wins when two documents are near-duplicates).
 S = {}
-def src(key, repo, glob_, field, keep, lic, bucket, prio): S[key] = dict(repo=repo, glob=glob_, field=field, keep=keep, licence=lic, bucket=bucket, prio=prio)
+def src(key, repo, glob_, field, keep, lic, bucket, prio, revision=None, group=1):
+    # revision: a branch such as refs/convert/parquet (the Hub's parquet export of CSV/JSON repos);
+    # group: join this many consecutive rows into one document (sentence-level sources)
+    S[key] = dict(repo=repo, glob=glob_, field=field, keep=keep, licence=lic, bucket=bucket, prio=prio, revision=revision, group=group)
 for wl, lang in [("ur", "urd_Arab"), ("pnb", "pnb_Arab"), ("skr", "skr_Arab"), ("sd", "snd_Arab"), ("ps", "pbt_Arab"), ("ks", "kas_Arab")]:
     src(f"wiki:{wl}", "wikimedia/wikipedia", f"20231101.{wl}/*.parquet", "text", ["id", "url", "title"], "CC-BY-SA-3.0", lang, 0)
 for lang in ["pbt_Arab", "pnb_Arab", "brh_Arab", "kas_Arab", "hno_Arab", "phr_Arab"]:
@@ -147,6 +150,14 @@ for g, lang in [("urd-Arab", "urd_Arab"), ("urd-Latn", "urd_Latn"), ("pnb-Arab",
     src(f"glotcc:{g}", "cis-lmu/GlotCC-V1", f"v1.0/{g}/*.parquet", "content", ["warc-target-uri", "warc-date"], "CC0-1.0", lang, 4)
 for lang in ["pnb_Arab", "skr_Arab", "brh_Arab", "kas_Arab", "snd_Arab", "pbt_Arab"]:
     src(f"fw2rm:{lang}", "HuggingFaceFW/fineweb-2", f"data/{lang}_removed/train/*.parquet", "text", ["id", "url", "date", "language_score"], "ODC-By-1.0", lang, 5)
+# v1.1 additions (2026-11, research/new-sources-eval-2026-10-18.json). Newer Wikipedia dumps sort first (prio -1), so a
+# 2026 revision of an article wins over its 2023 copy at near-dup time.
+for wl, lang in [("skr", "skr_Arab"), ("ks", "kas_Arab")]:
+    src(f"wikimon:{wl}", "omarkamali/wikipedia-monthly", f"20261001/{wl}/train/*.parquet", "text", ["id", "url", "title"], "CC-BY-SA-4.0", lang, -1)
+for lang in ["bal_Arab", "brh_Arab"]:   # gated (auto-approve): the HF_TOKEN account must have accepted the GlotSparse terms
+    src(f"glotsparse:{lang}", "cis-lmu/GlotSparse", f"{lang}/train/*.parquet", "Content", ["Source"], "CC0-1.0 (packaging)", lang, 0, revision="refs/convert/parquet")
+src("oldi:kas_Arab", "openlanguagedata/oldi_seed", "kas_Arab/train/*.parquet", "text", ["id"], "CC-BY-SA-4.0", "kas_Arab", 0, revision="refs/convert/parquet", group=20)
+V11_SOURCES = ["wikimon:skr", "wikimon:ks", "glotsparse:bal_Arab", "glotsparse:brh_Arab", "oldi:kas_Arab"]
 
 GROUPS = {   # balanced for parallel Kaggle sessions (upstream compressed sizes, Oct 2026)
     "urdu-fw2": ["fw2:urd_Arab"],                                                      # 6.9 GB, 4.8M docs
@@ -155,6 +166,7 @@ GROUPS = {   # balanced for parallel Kaggle sessions (upstream compressed sizes,
     "pak-mid": ["fw2:pbt_Arab", "hplt2:pbt_Arab", "fw2rm:pbt_Arab", "fw2:snd_Arab", "hplt2:snd_Arab", "sangraha:snd", "fw2rm:snd_Arab"],
     "pak-small": [k for k in S if k.startswith(("wiki:", "omniasr:", "glotcc:", "fw2rm:", "fw2:", "hplt2:kas", "sangraha:kas"))
                   and k not in ("fw2:urd_Arab", "glotcc:urd-Arab", "fw2:pbt_Arab", "fw2rm:pbt_Arab", "fw2:snd_Arab", "fw2rm:snd_Arab")],
+    "v11": V11_SOURCES,
 }
 def selected_sources():
     if SOURCES_SEL in ("", "all"): return list(S)
@@ -479,7 +491,7 @@ def route_source(key, routed, done):
     if not rev:
         sha = None
         for attempt in range(5):
-            try: sha = api.dataset_info(s["repo"]).sha; break
+            try: sha = api.dataset_info(s["repo"], revision=s.get("revision")).sha; break
             except Exception as e: print("   pin retry", attempt, str(e)[:100], flush=True); time.sleep(15 * (attempt + 1))
         if not sha: raise RuntimeError(f"cannot pin the upstream revision for {key}")
         rev = {"repo": s["repo"], "sha": sha, "glob": s["glob"], "pinned": time.strftime("%Y-%m-%d")}
@@ -505,6 +517,9 @@ def route_source(key, routed, done):
                     meta = {k: tbl[k][i] for k in cols if k != s["field"]}
                     items.append((t, json.dumps(meta, ensure_ascii=False, default=str)))
             del tbl
+            g = s.get("group") or 1
+            if g > 1:   # consecutive sentences -> one document; meta keeps the first row's ids
+                items = [("\n".join(t for t, _ in items[i:i + g]), items[i][1]) for i in range(0, len(items), g)]
             batches = [(s["bucket"], items[i:i + 1000]) for i in range(0, len(items), 1000)]
             res = (p.map_async(route_batch, batches, chunksize=1).get(timeout=POOL_TIMEOUT) if p else [route_batch(b) for b in batches])
             buckets = collections.defaultdict(lambda: {"text": [], "meta": [], "sha1": [], "lid_conf": []})
@@ -617,6 +632,20 @@ def eval_grams(lang):
     g = np.unique(np.concatenate(hs)) if hs else np.empty(0, dtype=np.uint64)
     return g, used
 
+# Urdu leak filter (v1.1). PakLID sent Urdu web pages into small Arabic-script buckets: in corpus-v1, 55% of brh_Arab
+# words and 18% of bal_Arab read as Urdu (2026-11-05 audit). Rate = Urdu function words per 100 Arabic-script words.
+# On reference text, Urdu (corpus-v1 urd) is >= 8 in 96.5% of docs; clean GlotSparse Balochi/Brahui in 0.5% / 0.1%.
+# Applied only to documents from crawls; curated native sources (speech transcripts, GlotSparse) are trusted.
+URDU_FILTER_LANGS = {"bal_Arab", "brh_Arab", "hno_Arab", "phr_Arab"}
+URDU_TRUSTED = ("omniasr:", "glotsparse:")
+URDU_FILTER_MIN = 8.0
+URDU_FW = set("کے کی ہے ہیں میں سے نے کو کہ تھا تھی تھے گیا گئی رہا رہے ہوں ہو ہوتا ہوتی کر کیا لیے ساتھ بھی".split())
+HEH = {ord("ه"): "ہ", ord("ۃ"): "ہ"}
+AR_WORD = re.compile(r"[\u0600-\u06FF\u0750-\u077F]+")
+def urdu_rate(text):
+    w = AR_WORD.findall(text.translate(YEH_KAF).translate(HEH))
+    return 100.0 * sum(x in URDU_FW for x in w) / len(w) if len(w) >= 30 else 0.0
+
 def dedup_language(lang, routed, out, done_out):
     global GRAMS
     if f"{lang}/stats.json" in done_out and os.environ.get("FORCE") != "1":
@@ -641,7 +670,10 @@ def dedup_language(lang, routed, out, done_out):
             for i, h in enumerate(sha):
                 k = int(h[:16], 16)
                 if k in seen: stats["exact_dup"] += 1; continue
-                seen.add(k); keep_i.append(i)
+                seen.add(k)
+                if lang in URDU_FILTER_LANGS and not src_key.startswith(URDU_TRUSTED) and urdu_rate(texts[i]) >= URDU_FILTER_MIN:
+                    stats["urdu_like"] += 1; continue
+                keep_i.append(i)
             sub = [texts[i] for i in keep_i]
             chunks = [sub[i:i + 500] for i in range(0, len(sub), 500)]
             res = (p.map_async(dedup_batch, chunks, chunksize=1).get(timeout=POOL_TIMEOUT) if p else [dedup_batch(c) for c in chunks])

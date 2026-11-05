@@ -1,0 +1,14 @@
+{
+  "id": "rorschach123878686/balagh-t01-optim8bit",
+  "title": "balagh-t01-optim8bit",
+  "code_file": "t01_optim8bit.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "machine_shape": "NvidiaTeslaT4",
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": []
+}
