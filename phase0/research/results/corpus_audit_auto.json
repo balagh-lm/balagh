@@ -1,0 +1,573 @@
+{
+ "FineWeb-2 | urd_Arab": {
+  "corpus": "FineWeb-2",
+  "lang": "urd_Arab",
+  "repo": "HuggingFaceFW/fineweb-2",
+  "kind": "parquet",
+  "pattern": "data/urd_Arab/train/*.parquet",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 0.99,
+  "paklid_top": {
+   "urd_Arab": 495,
+   "eng_Latn": 3,
+   "brh_Arab": 1,
+   "snd_Arab": 1
+  },
+  "paklid_claimed_conf>=0.7": 0.948,
+  "urdu_like_share(>=8)": 0.996,
+  "quality_fail_share": 0.012
+ },
+ "FineWeb-2 | urd_Latn": {
+  "corpus": "FineWeb-2",
+  "lang": "urd_Latn",
+  "repo": "HuggingFaceFW/fineweb-2",
+  "kind": "parquet",
+  "pattern": "data/urd_Latn/train/*.parquet",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 1.0,
+  "paklid_top": {
+   "urd_Latn": 500
+  },
+  "paklid_claimed_conf>=0.7": 0.978,
+  "urdu_like_share(>=8)": null,
+  "quality_fail_share": 0.072
+ },
+ "FineWeb-2 | pbt_Arab": {
+  "corpus": "FineWeb-2",
+  "lang": "pbt_Arab",
+  "repo": "HuggingFaceFW/fineweb-2",
+  "kind": "parquet",
+  "pattern": "data/pbt_Arab/train/*.parquet",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 1.0,
+  "paklid_top": {
+   "pbt_Arab": 500
+  },
+  "paklid_claimed_conf>=0.7": 0.988,
+  "urdu_like_share(>=8)": 0.0,
+  "quality_fail_share": 0.012
+ },
+ "FineWeb-2 | snd_Arab": {
+  "corpus": "FineWeb-2",
+  "lang": "snd_Arab",
+  "repo": "HuggingFaceFW/fineweb-2",
+  "kind": "parquet",
+  "pattern": "data/snd_Arab/train/*.parquet",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 1.0,
+  "paklid_top": {
+   "snd_Arab": 500
+  },
+  "paklid_claimed_conf>=0.7": 0.984,
+  "urdu_like_share(>=8)": 0.002,
+  "quality_fail_share": 0.012
+ },
+ "FineWeb-2 | pnb_Arab": {
+  "corpus": "FineWeb-2",
+  "lang": "pnb_Arab",
+  "repo": "HuggingFaceFW/fineweb-2",
+  "kind": "parquet",
+  "pattern": "data/pnb_Arab/train/*.parquet",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 0.688,
+  "paklid_top": {
+   "pnb_Arab": 344,
+   "skr_Arab": 150,
+   "urd_Arab": 2,
+   "phr_Arab": 2,
+   "urd_Latn": 1
+  },
+  "paklid_claimed_conf>=0.7": 0.638,
+  "urdu_like_share(>=8)": 0.056,
+  "quality_fail_share": 0.004
+ },
+ "FineWeb-2 | skr_Arab": {
+  "corpus": "FineWeb-2",
+  "lang": "skr_Arab",
+  "repo": "HuggingFaceFW/fineweb-2",
+  "kind": "parquet",
+  "pattern": "data/skr_Arab/train/*.parquet",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 0.996,
+  "paklid_top": {
+   "skr_Arab": 498,
+   "pnb_Arab": 2
+  },
+  "paklid_claimed_conf>=0.7": 0.974,
+  "urdu_like_share(>=8)": 0.084,
+  "quality_fail_share": 0.004
+ },
+ "FineWeb-2 | brh_Arab": {
+  "corpus": "FineWeb-2",
+  "lang": "brh_Arab",
+  "repo": "HuggingFaceFW/fineweb-2",
+  "kind": "parquet",
+  "pattern": "data/brh_Arab/train/*.parquet",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 0.822,
+  "paklid_top": {
+   "brh_Arab": 411,
+   "urd_Latn": 41,
+   "urd_Arab": 26,
+   "eng_Latn": 21,
+   "arb_Arab": 1
+  },
+  "paklid_claimed_conf>=0.7": 0.784,
+  "urdu_like_share(>=8)": 0.206,
+  "quality_fail_share": 0.214
+ },
+ "FineWeb-2 | kas_Arab": {
+  "corpus": "FineWeb-2",
+  "lang": "kas_Arab",
+  "repo": "HuggingFaceFW/fineweb-2",
+  "kind": "parquet",
+  "pattern": "data/kas_Arab/train/*.parquet",
+  "field": "text",
+  "n": 260,
+  "paklid_claimed_share": 0.988,
+  "paklid_top": {
+   "kas_Arab": 257,
+   "eng_Latn": 1,
+   "brh_Arab": 1,
+   "urd_Arab": 1
+  },
+  "paklid_claimed_conf>=0.7": 0.962,
+  "urdu_like_share(>=8)": 0.0,
+  "quality_fail_share": 0.058
+ },
+ "FineWeb-2 removed | pnb_Arab": {
+  "corpus": "FineWeb-2 removed",
+  "lang": "pnb_Arab",
+  "repo": "HuggingFaceFW/fineweb-2",
+  "kind": "parquet",
+  "pattern": "data/pnb_Arab_removed/train/*.parquet",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 0.876,
+  "paklid_top": {
+   "pnb_Arab": 438,
+   "skr_Arab": 39,
+   "eng_Latn": 7,
+   "fas_Arab": 5,
+   "urd_Arab": 4
+  },
+  "paklid_claimed_conf>=0.7": 0.68,
+  "urdu_like_share(>=8)": 0.018,
+  "quality_fail_share": 0.444
+ },
+ "FineWeb-2 removed | skr_Arab": {
+  "corpus": "FineWeb-2 removed",
+  "lang": "skr_Arab",
+  "repo": "HuggingFaceFW/fineweb-2",
+  "kind": "parquet",
+  "pattern": "data/skr_Arab_removed/train/*.parquet",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 0.288,
+  "paklid_top": {
+   "skr_Arab": 144,
+   "urd_Latn": 143,
+   "pbt_Arab": 143,
+   "pnb_Arab": 27,
+   "urd_Arab": 14
+  },
+  "paklid_claimed_conf>=0.7": 0.264,
+  "urdu_like_share(>=8)": 0.018,
+  "quality_fail_share": 0.74
+ },
+ "FineWeb-2 removed | brh_Arab": {
+  "corpus": "FineWeb-2 removed",
+  "lang": "brh_Arab",
+  "repo": "HuggingFaceFW/fineweb-2",
+  "kind": "parquet",
+  "pattern": "data/brh_Arab_removed/train/*.parquet",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 0.094,
+  "paklid_top": {
+   "urd_Latn": 168,
+   "urd_Arab": 114,
+   "fas_Arab": 104,
+   "eng_Latn": 51,
+   "brh_Arab": 47
+  },
+  "paklid_claimed_conf>=0.7": 0.034,
+  "urdu_like_share(>=8)": 0.386,
+  "quality_fail_share": 0.878
+ },
+ "FineWeb-2 removed | kas_Arab": {
+  "corpus": "FineWeb-2 removed",
+  "lang": "kas_Arab",
+  "repo": "HuggingFaceFW/fineweb-2",
+  "kind": "parquet",
+  "pattern": "data/kas_Arab_removed/train/*.parquet",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 0.158,
+  "paklid_top": {
+   "fas_Arab": 183,
+   "eng_Latn": 126,
+   "kas_Arab": 79,
+   "urd_Arab": 46,
+   "skr_Arab": 23
+  },
+  "paklid_claimed_conf>=0.7": 0.142,
+  "urdu_like_share(>=8)": 0.032,
+  "quality_fail_share": 0.856
+ },
+ "HPLT 2.0 | urd_Arab": {
+  "corpus": "HPLT 2.0",
+  "lang": "urd_Arab",
+  "repo": "HPLT/HPLT2.0_cleaned",
+  "kind": "parquet",
+  "pattern": "urd_Arab/*.parquet",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 0.958,
+  "paklid_top": {
+   "urd_Arab": 479,
+   "brh_Arab": 10,
+   "pnb_Arab": 7,
+   "phr_Arab": 1,
+   "hno_Arab": 1
+  },
+  "paklid_claimed_conf>=0.7": 0.892,
+  "urdu_like_share(>=8)": 0.986,
+  "quality_fail_share": 0.02
+ },
+ "HPLT 2.0 | pbt_Arab": {
+  "corpus": "HPLT 2.0",
+  "lang": "pbt_Arab",
+  "repo": "HPLT/HPLT2.0_cleaned",
+  "kind": "parquet",
+  "pattern": "pbt_Arab/*.parquet",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 1.0,
+  "paklid_top": {
+   "pbt_Arab": 500
+  },
+  "paklid_claimed_conf>=0.7": 0.964,
+  "urdu_like_share(>=8)": 0.0,
+  "quality_fail_share": 0.01
+ },
+ "HPLT 2.0 | snd_Arab": {
+  "corpus": "HPLT 2.0",
+  "lang": "snd_Arab",
+  "repo": "HPLT/HPLT2.0_cleaned",
+  "kind": "parquet",
+  "pattern": "snd_Arab/*.parquet",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 0.95,
+  "paklid_top": {
+   "snd_Arab": 475,
+   "fas_Arab": 24,
+   "kas_Arab": 1
+  },
+  "paklid_claimed_conf>=0.7": 0.936,
+  "urdu_like_share(>=8)": 0.0,
+  "quality_fail_share": 0.02
+ },
+ "HPLT 2.0 | kas_Arab": {
+  "corpus": "HPLT 2.0",
+  "lang": "kas_Arab",
+  "repo": "HPLT/HPLT2.0_cleaned",
+  "kind": "parquet",
+  "pattern": "kas_Arab/*.parquet",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 0.986,
+  "paklid_top": {
+   "kas_Arab": 493,
+   "brh_Arab": 3,
+   "fas_Arab": 2,
+   "pnb_Arab": 1,
+   "eng_Latn": 1
+  },
+  "paklid_claimed_conf>=0.7": 0.946,
+  "urdu_like_share(>=8)": 0.0,
+  "quality_fail_share": 0.032
+ },
+ "GlotCC-V1 | urd_Arab": {
+  "corpus": "GlotCC-V1",
+  "lang": "urd_Arab",
+  "repo": "cis-lmu/GlotCC-V1",
+  "kind": "parquet",
+  "pattern": "v1.0/urd-Arab/*.parquet",
+  "field": "content",
+  "n": 500,
+  "paklid_claimed_share": 0.99,
+  "paklid_top": {
+   "urd_Arab": 495,
+   "brh_Arab": 5
+  },
+  "paklid_claimed_conf>=0.7": 0.928,
+  "urdu_like_share(>=8)": 0.998,
+  "quality_fail_share": 0.0
+ },
+ "GlotCC-V1 | urd_Latn": {
+  "corpus": "GlotCC-V1",
+  "lang": "urd_Latn",
+  "repo": "cis-lmu/GlotCC-V1",
+  "kind": "parquet",
+  "pattern": "v1.0/urd-Latn/*.parquet",
+  "field": "content",
+  "n": 500,
+  "paklid_claimed_share": 1.0,
+  "paklid_top": {
+   "urd_Latn": 500
+  },
+  "paklid_claimed_conf>=0.7": 0.99,
+  "urdu_like_share(>=8)": null,
+  "quality_fail_share": 0.014
+ },
+ "GlotCC-V1 | pbt_Arab": {
+  "corpus": "GlotCC-V1",
+  "lang": "pbt_Arab",
+  "repo": "cis-lmu/GlotCC-V1",
+  "kind": "parquet",
+  "pattern": "v1.0/pbt-Arab/*.parquet",
+  "field": "content",
+  "n": 500,
+  "paklid_claimed_share": 1.0,
+  "paklid_top": {
+   "pbt_Arab": 500
+  },
+  "paklid_claimed_conf>=0.7": 0.99,
+  "urdu_like_share(>=8)": 0.0,
+  "quality_fail_share": 0.002
+ },
+ "GlotCC-V1 | snd_Arab": {
+  "corpus": "GlotCC-V1",
+  "lang": "snd_Arab",
+  "repo": "cis-lmu/GlotCC-V1",
+  "kind": "parquet",
+  "pattern": "v1.0/snd-Arab/*.parquet",
+  "field": "content",
+  "n": 500,
+  "paklid_claimed_share": 1.0,
+  "paklid_top": {
+   "snd_Arab": 500
+  },
+  "paklid_claimed_conf>=0.7": 0.998,
+  "urdu_like_share(>=8)": 0.0,
+  "quality_fail_share": 0.004
+ },
+ "GlotCC-V1 | pnb_Arab": {
+  "corpus": "GlotCC-V1",
+  "lang": "pnb_Arab",
+  "repo": "cis-lmu/GlotCC-V1",
+  "kind": "parquet",
+  "pattern": "v1.0/pnb-Arab/*.parquet",
+  "field": "content",
+  "n": 500,
+  "paklid_claimed_share": 0.958,
+  "paklid_top": {
+   "pnb_Arab": 479,
+   "skr_Arab": 14,
+   "brh_Arab": 6,
+   "urd_Arab": 1
+  },
+  "paklid_claimed_conf>=0.7": 0.862,
+  "urdu_like_share(>=8)": 0.0,
+  "quality_fail_share": 0.126
+ },
+ "GlotCC-V1 | skr_Arab": {
+  "corpus": "GlotCC-V1",
+  "lang": "skr_Arab",
+  "repo": "cis-lmu/GlotCC-V1",
+  "kind": "parquet",
+  "pattern": "v1.0/skr-Arab/*.parquet",
+  "field": "content",
+  "n": 16,
+  "paklid_claimed_share": 1.0,
+  "paklid_top": {
+   "skr_Arab": 16
+  },
+  "paklid_claimed_conf>=0.7": 1.0,
+  "urdu_like_share(>=8)": 0.0,
+  "quality_fail_share": 0.0
+ },
+ "GlotCC-V1 | bal_Arab": {
+  "corpus": "GlotCC-V1",
+  "lang": "bal_Arab",
+  "repo": "cis-lmu/GlotCC-V1",
+  "kind": "parquet",
+  "pattern": "v1.0/bal-Arab/*.parquet",
+  "field": "content",
+  "n": 352,
+  "paklid_claimed_share": 0.915,
+  "paklid_top": {
+   "bal_Arab": 322,
+   "urd_Arab": 22,
+   "fas_Arab": 8
+  },
+  "paklid_claimed_conf>=0.7": 0.878,
+  "urdu_like_share(>=8)": 0.116,
+  "quality_fail_share": 0.0
+ },
+ "GlotCC-V1 | brh_Arab": {
+  "corpus": "GlotCC-V1",
+  "lang": "brh_Arab",
+  "repo": "cis-lmu/GlotCC-V1",
+  "kind": "parquet",
+  "pattern": "v1.0/brh-Arab/*.parquet",
+  "field": "content",
+  "n": 35,
+  "paklid_claimed_share": 0.971,
+  "paklid_top": {
+   "brh_Arab": 34,
+   "fas_Arab": 1
+  },
+  "paklid_claimed_conf>=0.7": 0.971,
+  "urdu_like_share(>=8)": 0.0,
+  "quality_fail_share": 0.0
+ },
+ "GlotCC-V1 | kas_Arab": {
+  "corpus": "GlotCC-V1",
+  "lang": "kas_Arab",
+  "repo": "cis-lmu/GlotCC-V1",
+  "kind": "parquet",
+  "pattern": "v1.0/kas-Arab/*.parquet",
+  "field": "content",
+  "n": 176,
+  "paklid_claimed_share": 0.989,
+  "paklid_top": {
+   "kas_Arab": 174,
+   "urd_Arab": 2
+  },
+  "paklid_claimed_conf>=0.7": 0.989,
+  "urdu_like_share(>=8)": 0.0,
+  "quality_fail_share": 0.034
+ },
+ "MADLAD-400 clean | urd_Arab": {
+  "corpus": "MADLAD-400 clean",
+  "lang": "urd_Arab",
+  "repo": "allenai/MADLAD-400",
+  "kind": "jsonl.gz",
+  "pattern": "data/ur/ur_clean_*.jsonl.gz",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 0.994,
+  "paklid_top": {
+   "urd_Arab": 497,
+   "eng_Latn": 1,
+   "urd_Latn": 1,
+   "snd_Arab": 1
+  },
+  "paklid_claimed_conf>=0.7": 0.952,
+  "urdu_like_share(>=8)": 1.0,
+  "quality_fail_share": 0.056
+ },
+ "MADLAD-400 clean | pbt_Arab": {
+  "corpus": "MADLAD-400 clean",
+  "lang": "pbt_Arab",
+  "repo": "allenai/MADLAD-400",
+  "kind": "jsonl.gz",
+  "pattern": "data/ps/ps_clean_*.jsonl.gz",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 1.0,
+  "paklid_top": {
+   "pbt_Arab": 500
+  },
+  "paklid_claimed_conf>=0.7": 0.998,
+  "urdu_like_share(>=8)": 0.0,
+  "quality_fail_share": 0.128
+ },
+ "MADLAD-400 clean | snd_Arab": {
+  "corpus": "MADLAD-400 clean",
+  "lang": "snd_Arab",
+  "repo": "allenai/MADLAD-400",
+  "kind": "jsonl.gz",
+  "pattern": "data/sd/sd_clean_*.jsonl.gz",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 1.0,
+  "paklid_top": {
+   "snd_Arab": 500
+  },
+  "paklid_claimed_conf>=0.7": 1.0,
+  "urdu_like_share(>=8)": 0.0,
+  "quality_fail_share": 0.07
+ },
+ "MADLAD-400 clean | skr_Arab": {
+  "corpus": "MADLAD-400 clean",
+  "lang": "skr_Arab",
+  "repo": "allenai/MADLAD-400",
+  "kind": "jsonl.gz",
+  "pattern": "data/skr/skr_clean_*.jsonl.gz",
+  "field": "text",
+  "n": 107,
+  "paklid_claimed_share": 0.28,
+  "paklid_top": {
+   "pnb_Arab": 76,
+   "skr_Arab": 30,
+   "eng_Latn": 1
+  },
+  "paklid_claimed_conf>=0.7": 0.252,
+  "urdu_like_share(>=8)": 0.009,
+  "quality_fail_share": 0.262
+ },
+ "MADLAD-400 clean | bal_Arab": {
+  "corpus": "MADLAD-400 clean",
+  "lang": "bal_Arab",
+  "repo": "allenai/MADLAD-400",
+  "kind": "jsonl.gz",
+  "pattern": "data/bgp/bgp_clean_*.jsonl.gz",
+  "field": "text",
+  "n": 500,
+  "paklid_claimed_share": 0.0,
+  "paklid_top": {
+   "urd_Latn": 496,
+   "eng_Latn": 4
+  },
+  "paklid_claimed_conf>=0.7": 0.0,
+  "urdu_like_share(>=8)": 0.158,
+  "quality_fail_share": 1.0
+ },
+ "CulturaX | urd_Arab": {
+  "corpus": "CulturaX",
+  "lang": "urd_Arab",
+  "repo": "uonlp/CulturaX",
+  "kind": "parquet",
+  "pattern": "ur/*.parquet",
+  "field": "text",
+  "error": "403 Client Error. (Request ID: Root=1-6aee597e-62593a754303a0070259aa02;28059764-f779-4d12-84d5-9a915a5469ce)\n\nCannot access gated repo for url https://huggingface.co/datasets/uonlp/CulturaX/resolve/main/ur/ur_part_00000.parquet.\nAccess to dataset uonlp/CulturaX is restricted and you are not in the "
+ },
+ "CulturaX | pbt_Arab": {
+  "corpus": "CulturaX",
+  "lang": "pbt_Arab",
+  "repo": "uonlp/CulturaX",
+  "kind": "parquet",
+  "pattern": "ps/*.parquet",
+  "field": "text",
+  "error": "403 Client Error. (Request ID: Root=1-6aee5981-70b9ebb43ba8bd10141b7bd9;032fb204-7e54-4c1e-b082-41d7101c29f6)\n\nCannot access gated repo for url https://huggingface.co/datasets/uonlp/CulturaX/resolve/main/ps/ps_part_00000.parquet.\nAccess to dataset uonlp/CulturaX is restricted and you are not in the "
+ },
+ "CulturaX | snd_Arab": {
+  "corpus": "CulturaX",
+  "lang": "snd_Arab",
+  "repo": "uonlp/CulturaX",
+  "kind": "parquet",
+  "pattern": "sd/*.parquet",
+  "field": "text",
+  "error": "403 Client Error. (Request ID: Root=1-6aee5985-11ab1e2d15cca34f42694d96;d134c320-69d8-42b1-b359-4edacae422d9)\n\nCannot access gated repo for url https://huggingface.co/datasets/uonlp/CulturaX/resolve/main/sd/sd_part_00000.parquet.\nAccess to dataset uonlp/CulturaX is restricted and you are not in the "
+ },
+ "CulturaX | pnb_Arab": {
+  "corpus": "CulturaX",
+  "lang": "pnb_Arab",
+  "repo": "uonlp/CulturaX",
+  "kind": "parquet",
+  "pattern": "pnb/*.parquet",
+  "field": "text",
+  "error": "403 Client Error. (Request ID: Root=1-6aee5989-781ce4e34c8c972010bf795d;7def169e-3fcd-48b0-a0a5-5d723f14b60a)\n\nCannot access gated repo for url https://huggingface.co/datasets/uonlp/CulturaX/resolve/main/pnb/pnb_part_00000.parquet.\nAccess to dataset uonlp/CulturaX is restricted and you are not in th"
+ }
+}

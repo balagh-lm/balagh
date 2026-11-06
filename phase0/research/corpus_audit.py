@@ -50,9 +50,10 @@ def sample_parquet(p):
         md = pq.ParquetFile(fs.open(f"datasets/{p['repo']}/{f}")).metadata
         plan += [(f, rg) for rg in range(md.num_row_groups)]
     rng = random.Random(SEED); rng.shuffle(plan); out = []
+    per = max(N_SAMPLE // 20, -(-N_SAMPLE // max(1, len(plan))))   # at least 20 row groups' worth of spread; all of a small corpus
     for f, rg in plan:
         t = pq.ParquetFile(fs.open(f"datasets/{p['repo']}/{f}")).read_row_group(rg, columns=[p["field"]]).column(p["field"]).to_pylist()
-        rng.shuffle(t); out += [x for x in t[:max(1, N_SAMPLE // 20)] if isinstance(x, str) and x.strip()]
+        rng.shuffle(t); out += [x for x in t[:per] if isinstance(x, str) and x.strip()]
         if len(out) >= N_SAMPLE: break
     return out[:N_SAMPLE], len(fl)
 
