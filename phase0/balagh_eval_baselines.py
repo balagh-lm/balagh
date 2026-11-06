@@ -129,7 +129,7 @@ def load_bpb_texts():
     return out
 
 @torch.no_grad()
-def bits_per_byte(tok, model, texts, win=1024):
+def bits_per_byte(tok, model, texts, win=int(os.environ.get("BPB_WIN", 512))):   # 1024 crashed the 4B in fp32 on Kaggle T4 x2
     """Sum of next-token NLL over UTF-8 bytes: comparable across tokenizers. Windows of `win` tokens, no overlap;
     the first token of each window is conditioned on BOS when the tokenizer has one, otherwise not scored."""
     dev = next(model.parameters()).device; nll = 0.0; nbytes = 0
@@ -237,7 +237,10 @@ if __name__ == "__main__":
             print("  FAILED:", str(e)[:400]); traceback.print_exc(limit=2)
             json.dump(results, open(results_path, "w"), indent=1)
         finally:
-            tok = model = None; gc.collect(); torch.cuda.empty_cache()   # release after the except frame is gone
+            tok = model = None; gc.collect()   # release after the except frame is gone
+            try: torch.cuda.empty_cache()
+            except Exception as e:   # a dead CUDA context cannot run the next model: stop cleanly with results saved
+                print("  CUDA context lost, stopping here (results so far are saved):", str(e)[:120]); break
     cols = [("urdummlu", "UrduMMLU"), ("belebele_urd", "Bele urd"), ("belebele_urd_latn", "Bele Roman Urdu"), ("belebele_pbt", "Bele pbt"),
             ("belebele_snd", "Bele snd"), ("belebele_eng", "Bele eng"), ("mmlu_eng", "MMLU eng")]
     rows = ["| model | " + " | ".join(c[1] for c in cols) + " | note |", "|---|" + "---|" * (len(cols) + 1)]
