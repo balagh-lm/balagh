@@ -1,0 +1,786 @@
+{
+ "Qwen3.5 (Balagh base)": {
+  "id": "Qwen/Qwen3.5-2B-Base",
+  "parity": {
+   "FLORES urd_Arab": {
+    "mean": 2.008,
+    "pairs": 1012
+   },
+   "FLORES pbt_Arab": {
+    "mean": 2.362,
+    "pairs": 1012
+   },
+   "FLORES snd_Arab": {
+    "mean": 2.646,
+    "pairs": 1012
+   },
+   "FLORES kas_Arab": {
+    "mean": 2.877,
+    "pairs": 1012
+   },
+   "FLORES pan_Guru": {
+    "mean": 3.878,
+    "pairs": 1012
+   },
+   "SMOL urd_Arab": {
+    "mean": 2.29,
+    "pairs": 563
+   },
+   "SMOL pnb_Arab (Shahmukhi)": {
+    "mean": 2.461,
+    "pairs": 863
+   },
+   "SMOL brh_Arab": {
+    "mean": 2.419,
+    "pairs": 863
+   },
+   "SMOL kas_Arab": {
+    "mean": 3.069,
+    "pairs": 863
+   }
+  },
+  "fertility": {
+   "urd_Arab": {
+    "tokens_per_word": 2.183,
+    "chars_per_token": 2.308,
+    "docs": 300
+   },
+   "urd_Latn": {
+    "tokens_per_word": 1.798,
+    "chars_per_token": 2.921,
+    "docs": 300
+   },
+   "pbt_Arab": {
+    "tokens_per_word": 2.431,
+    "chars_per_token": 1.982,
+    "docs": 300
+   },
+   "snd_Arab": {
+    "tokens_per_word": 2.735,
+    "chars_per_token": 1.709,
+    "docs": 300
+   },
+   "pnb_Arab": {
+    "tokens_per_word": 2.395,
+    "chars_per_token": 2.029,
+    "docs": 300
+   },
+   "skr_Arab": {
+    "tokens_per_word": 2.56,
+    "chars_per_token": 1.931,
+    "docs": 300
+   },
+   "bal_Arab": {
+    "tokens_per_word": 2.474,
+    "chars_per_token": 1.863,
+    "docs": 300
+   },
+   "brh_Arab": {
+    "tokens_per_word": 2.307,
+    "chars_per_token": 2.064,
+    "docs": 300
+   },
+   "kas_Arab": {
+    "tokens_per_word": 3.657,
+    "chars_per_token": 1.54,
+    "docs": 300
+   },
+   "hno_Arab": {
+    "tokens_per_word": 2.041,
+    "chars_per_token": 2.156,
+    "docs": 213
+   },
+   "phr_Arab": {
+    "tokens_per_word": 2.18,
+    "chars_per_token": 2.06,
+    "docs": 295
+   }
+  }
+ },
+ "Gemma 4": {
+  "id": "google/gemma-4-E2B",
+  "parity": {
+   "FLORES urd_Arab": {
+    "mean": 1.533,
+    "pairs": 1012
+   },
+   "FLORES pbt_Arab": {
+    "mean": 1.868,
+    "pairs": 1012
+   },
+   "FLORES snd_Arab": {
+    "mean": 2.048,
+    "pairs": 1012
+   },
+   "FLORES kas_Arab": {
+    "mean": 2.393,
+    "pairs": 1012
+   },
+   "FLORES pan_Guru": {
+    "mean": 2.736,
+    "pairs": 1012
+   },
+   "SMOL urd_Arab": {
+    "mean": 1.705,
+    "pairs": 563
+   },
+   "SMOL pnb_Arab (Shahmukhi)": {
+    "mean": 1.897,
+    "pairs": 863
+   },
+   "SMOL brh_Arab": {
+    "mean": 2.127,
+    "pairs": 863
+   },
+   "SMOL kas_Arab": {
+    "mean": 2.71,
+    "pairs": 863
+   }
+  },
+  "fertility": {
+   "urd_Arab": {
+    "tokens_per_word": 1.727,
+    "chars_per_token": 2.918,
+    "docs": 300
+   },
+   "urd_Latn": {
+    "tokens_per_word": 1.608,
+    "chars_per_token": 3.266,
+    "docs": 300
+   },
+   "pbt_Arab": {
+    "tokens_per_word": 2.036,
+    "chars_per_token": 2.366,
+    "docs": 300
+   },
+   "snd_Arab": {
+    "tokens_per_word": 2.115,
+    "chars_per_token": 2.21,
+    "docs": 300
+   },
+   "pnb_Arab": {
+    "tokens_per_word": 1.884,
+    "chars_per_token": 2.58,
+    "docs": 300
+   },
+   "skr_Arab": {
+    "tokens_per_word": 2.023,
+    "chars_per_token": 2.443,
+    "docs": 300
+   },
+   "bal_Arab": {
+    "tokens_per_word": 2.044,
+    "chars_per_token": 2.254,
+    "docs": 300
+   },
+   "brh_Arab": {
+    "tokens_per_word": 1.905,
+    "chars_per_token": 2.5,
+    "docs": 300
+   },
+   "kas_Arab": {
+    "tokens_per_word": 3.061,
+    "chars_per_token": 1.84,
+    "docs": 300
+   },
+   "hno_Arab": {
+    "tokens_per_word": 1.529,
+    "chars_per_token": 2.878,
+    "docs": 213
+   },
+   "phr_Arab": {
+    "tokens_per_word": 1.681,
+    "chars_per_token": 2.671,
+    "docs": 295
+   }
+  }
+ },
+ "Llama 3.1 (Qalb, Alif)": {
+  "id": "enstazao/Qalb-1.0-8B-Instruct",
+  "parity": {
+   "FLORES urd_Arab": {
+    "mean": 3.122,
+    "pairs": 1012
+   },
+   "FLORES pbt_Arab": {
+    "mean": 2.712,
+    "pairs": 1012
+   },
+   "FLORES snd_Arab": {
+    "mean": 2.886,
+    "pairs": 1012
+   },
+   "FLORES kas_Arab": {
+    "mean": 3.339,
+    "pairs": 1012
+   },
+   "FLORES pan_Guru": {
+    "mean": 7.906,
+    "pairs": 1012
+   },
+   "SMOL urd_Arab": {
+    "mean": 3.55,
+    "pairs": 563
+   },
+   "SMOL pnb_Arab (Shahmukhi)": {
+    "mean": 3.28,
+    "pairs": 863
+   },
+   "SMOL brh_Arab": {
+    "mean": 3.144,
+    "pairs": 863
+   },
+   "SMOL kas_Arab": {
+    "mean": 3.615,
+    "pairs": 863
+   }
+  },
+  "fertility": {
+   "urd_Arab": {
+    "tokens_per_word": 3.011,
+    "chars_per_token": 1.674,
+    "docs": 300
+   },
+   "urd_Latn": {
+    "tokens_per_word": 1.843,
+    "chars_per_token": 2.85,
+    "docs": 300
+   },
+   "pbt_Arab": {
+    "tokens_per_word": 2.766,
+    "chars_per_token": 1.741,
+    "docs": 300
+   },
+   "snd_Arab": {
+    "tokens_per_word": 2.97,
+    "chars_per_token": 1.574,
+    "docs": 300
+   },
+   "pnb_Arab": {
+    "tokens_per_word": 3.062,
+    "chars_per_token": 1.587,
+    "docs": 300
+   },
+   "skr_Arab": {
+    "tokens_per_word": 3.273,
+    "chars_per_token": 1.51,
+    "docs": 300
+   },
+   "bal_Arab": {
+    "tokens_per_word": 2.951,
+    "chars_per_token": 1.562,
+    "docs": 300
+   },
+   "brh_Arab": {
+    "tokens_per_word": 2.802,
+    "chars_per_token": 1.699,
+    "docs": 300
+   },
+   "kas_Arab": {
+    "tokens_per_word": 4.08,
+    "chars_per_token": 1.38,
+    "docs": 300
+   },
+   "hno_Arab": {
+    "tokens_per_word": 3.061,
+    "chars_per_token": 1.437,
+    "docs": 213
+   },
+   "phr_Arab": {
+    "tokens_per_word": 3.09,
+    "chars_per_token": 1.453,
+    "docs": 295
+   }
+  }
+ },
+ "GPT-4o o200k": {
+  "id": "o200k_base",
+  "parity": {
+   "FLORES urd_Arab": {
+    "mean": 1.668,
+    "pairs": 1012
+   },
+   "FLORES pbt_Arab": {
+    "mean": 1.728,
+    "pairs": 1012
+   },
+   "FLORES snd_Arab": {
+    "mean": 1.721,
+    "pairs": 1012
+   },
+   "FLORES kas_Arab": {
+    "mean": 2.637,
+    "pairs": 1012
+   },
+   "FLORES pan_Guru": {
+    "mean": 2.645,
+    "pairs": 1012
+   },
+   "SMOL urd_Arab": {
+    "mean": 1.885,
+    "pairs": 563
+   },
+   "SMOL pnb_Arab (Shahmukhi)": {
+    "mean": 2.077,
+    "pairs": 863
+   },
+   "SMOL brh_Arab": {
+    "mean": 2.225,
+    "pairs": 863
+   },
+   "SMOL kas_Arab": {
+    "mean": 2.871,
+    "pairs": 863
+   }
+  },
+  "fertility": {
+   "urd_Arab": {
+    "tokens_per_word": 1.803,
+    "chars_per_token": 2.795,
+    "docs": 300
+   },
+   "urd_Latn": {
+    "tokens_per_word": 1.673,
+    "chars_per_token": 3.139,
+    "docs": 300
+   },
+   "pbt_Arab": {
+    "tokens_per_word": 1.804,
+    "chars_per_token": 2.671,
+    "docs": 300
+   },
+   "snd_Arab": {
+    "tokens_per_word": 1.789,
+    "chars_per_token": 2.613,
+    "docs": 300
+   },
+   "pnb_Arab": {
+    "tokens_per_word": 1.959,
+    "chars_per_token": 2.48,
+    "docs": 300
+   },
+   "skr_Arab": {
+    "tokens_per_word": 2.106,
+    "chars_per_token": 2.347,
+    "docs": 300
+   },
+   "bal_Arab": {
+    "tokens_per_word": 2.269,
+    "chars_per_token": 2.031,
+    "docs": 300
+   },
+   "brh_Arab": {
+    "tokens_per_word": 2.024,
+    "chars_per_token": 2.352,
+    "docs": 300
+   },
+   "kas_Arab": {
+    "tokens_per_word": 3.315,
+    "chars_per_token": 1.699,
+    "docs": 300
+   },
+   "hno_Arab": {
+    "tokens_per_word": 1.64,
+    "chars_per_token": 2.681,
+    "docs": 213
+   },
+   "phr_Arab": {
+    "tokens_per_word": 1.775,
+    "chars_per_token": 2.53,
+    "docs": 295
+   }
+  }
+ },
+ "GPT-4 cl100k": {
+  "id": "cl100k_base",
+  "parity": {
+   "FLORES urd_Arab": {
+    "mean": 4.402,
+    "pairs": 1012
+   },
+   "FLORES pbt_Arab": {
+    "mean": 3.8,
+    "pairs": 1012
+   },
+   "FLORES snd_Arab": {
+    "mean": 4.021,
+    "pairs": 1012
+   },
+   "FLORES kas_Arab": {
+    "mean": 4.662,
+    "pairs": 1012
+   },
+   "FLORES pan_Guru": {
+    "mean": 7.949,
+    "pairs": 1012
+   },
+   "SMOL urd_Arab": {
+    "mean": 4.995,
+    "pairs": 563
+   },
+   "SMOL pnb_Arab (Shahmukhi)": {
+    "mean": 4.616,
+    "pairs": 863
+   },
+   "SMOL brh_Arab": {
+    "mean": 4.383,
+    "pairs": 863
+   },
+   "SMOL kas_Arab": {
+    "mean": 5.092,
+    "pairs": 863
+   }
+  },
+  "fertility": {
+   "urd_Arab": {
+    "tokens_per_word": 4.32,
+    "chars_per_token": 1.166,
+    "docs": 300
+   },
+   "urd_Latn": {
+    "tokens_per_word": 1.875,
+    "chars_per_token": 2.802,
+    "docs": 300
+   },
+   "pbt_Arab": {
+    "tokens_per_word": 3.924,
+    "chars_per_token": 1.228,
+    "docs": 300
+   },
+   "snd_Arab": {
+    "tokens_per_word": 4.144,
+    "chars_per_token": 1.128,
+    "docs": 300
+   },
+   "pnb_Arab": {
+    "tokens_per_word": 4.342,
+    "chars_per_token": 1.119,
+    "docs": 300
+   },
+   "skr_Arab": {
+    "tokens_per_word": 4.564,
+    "chars_per_token": 1.083,
+    "docs": 300
+   },
+   "bal_Arab": {
+    "tokens_per_word": 4.132,
+    "chars_per_token": 1.115,
+    "docs": 300
+   },
+   "brh_Arab": {
+    "tokens_per_word": 4.083,
+    "chars_per_token": 1.166,
+    "docs": 300
+   },
+   "kas_Arab": {
+    "tokens_per_word": 5.493,
+    "chars_per_token": 1.025,
+    "docs": 300
+   },
+   "hno_Arab": {
+    "tokens_per_word": 4.205,
+    "chars_per_token": 1.046,
+    "docs": 213
+   },
+   "phr_Arab": {
+    "tokens_per_word": 4.246,
+    "chars_per_token": 1.057,
+    "docs": 295
+   }
+  }
+ },
+ "BLOOM": {
+  "id": "bigscience/bloom-560m",
+  "parity": {
+   "FLORES urd_Arab": {
+    "mean": 1.366,
+    "pairs": 1012
+   },
+   "FLORES pbt_Arab": {
+    "mean": 2.53,
+    "pairs": 1012
+   },
+   "FLORES snd_Arab": {
+    "mean": 2.511,
+    "pairs": 1012
+   },
+   "FLORES kas_Arab": {
+    "mean": 2.367,
+    "pairs": 1012
+   },
+   "FLORES pan_Guru": {
+    "mean": 1.452,
+    "pairs": 1012
+   },
+   "SMOL urd_Arab": {
+    "mean": 1.512,
+    "pairs": 563
+   },
+   "SMOL pnb_Arab (Shahmukhi)": {
+    "mean": 1.642,
+    "pairs": 863
+   },
+   "SMOL brh_Arab": {
+    "mean": 1.883,
+    "pairs": 863
+   },
+   "SMOL kas_Arab": {
+    "mean": 2.461,
+    "pairs": 863
+   }
+  },
+  "fertility": {
+   "urd_Arab": {
+    "tokens_per_word": 1.459,
+    "chars_per_token": 3.453,
+    "docs": 300
+   },
+   "urd_Latn": {
+    "tokens_per_word": 1.75,
+    "chars_per_token": 3.001,
+    "docs": 300
+   },
+   "pbt_Arab": {
+    "tokens_per_word": 2.579,
+    "chars_per_token": 1.868,
+    "docs": 300
+   },
+   "snd_Arab": {
+    "tokens_per_word": 2.569,
+    "chars_per_token": 1.819,
+    "docs": 300
+   },
+   "pnb_Arab": {
+    "tokens_per_word": 1.672,
+    "chars_per_token": 2.907,
+    "docs": 300
+   },
+   "skr_Arab": {
+    "tokens_per_word": 1.839,
+    "chars_per_token": 2.688,
+    "docs": 300
+   },
+   "bal_Arab": {
+    "tokens_per_word": 2.028,
+    "chars_per_token": 2.272,
+    "docs": 300
+   },
+   "brh_Arab": {
+    "tokens_per_word": 1.73,
+    "chars_per_token": 2.752,
+    "docs": 300
+   },
+   "kas_Arab": {
+    "tokens_per_word": 2.979,
+    "chars_per_token": 1.891,
+    "docs": 300
+   },
+   "hno_Arab": {
+    "tokens_per_word": 1.419,
+    "chars_per_token": 3.1,
+    "docs": 213
+   },
+   "phr_Arab": {
+    "tokens_per_word": 1.545,
+    "chars_per_token": 2.906,
+    "docs": 295
+   }
+  }
+ },
+ "mT5": {
+  "id": "google/mt5-base",
+  "parity": {
+   "FLORES urd_Arab": {
+    "mean": 1.517,
+    "pairs": 1012
+   },
+   "FLORES pbt_Arab": {
+    "mean": 1.615,
+    "pairs": 1012
+   },
+   "FLORES snd_Arab": {
+    "mean": 1.748,
+    "pairs": 1012
+   },
+   "FLORES kas_Arab": {
+    "mean": 2.018,
+    "pairs": 1012
+   },
+   "FLORES pan_Guru": {
+    "mean": 2.115,
+    "pairs": 1012
+   },
+   "SMOL urd_Arab": {
+    "mean": 1.62,
+    "pairs": 563
+   },
+   "SMOL pnb_Arab (Shahmukhi)": {
+    "mean": 1.723,
+    "pairs": 863
+   },
+   "SMOL brh_Arab": {
+    "mean": 1.687,
+    "pairs": 863
+   },
+   "SMOL kas_Arab": {
+    "mean": 2.083,
+    "pairs": 863
+   }
+  },
+  "fertility": {
+   "urd_Arab": {
+    "tokens_per_word": 1.903,
+    "chars_per_token": 2.648,
+    "docs": 300
+   },
+   "urd_Latn": {
+    "tokens_per_word": 1.691,
+    "chars_per_token": 3.107,
+    "docs": 300
+   },
+   "pbt_Arab": {
+    "tokens_per_word": 2.066,
+    "chars_per_token": 2.332,
+    "docs": 300
+   },
+   "snd_Arab": {
+    "tokens_per_word": 2.266,
+    "chars_per_token": 2.063,
+    "docs": 300
+   },
+   "pnb_Arab": {
+    "tokens_per_word": 2.122,
+    "chars_per_token": 2.291,
+    "docs": 300
+   },
+   "skr_Arab": {
+    "tokens_per_word": 2.258,
+    "chars_per_token": 2.189,
+    "docs": 300
+   },
+   "bal_Arab": {
+    "tokens_per_word": 2.36,
+    "chars_per_token": 1.952,
+    "docs": 300
+   },
+   "brh_Arab": {
+    "tokens_per_word": 2.112,
+    "chars_per_token": 2.254,
+    "docs": 300
+   },
+   "kas_Arab": {
+    "tokens_per_word": 3.128,
+    "chars_per_token": 1.801,
+    "docs": 300
+   },
+   "hno_Arab": {
+    "tokens_per_word": 1.886,
+    "chars_per_token": 2.332,
+    "docs": 213
+   },
+   "phr_Arab": {
+    "tokens_per_word": 1.996,
+    "chars_per_token": 2.25,
+    "docs": 295
+   }
+  }
+ },
+ "XLM-R": {
+  "id": "FacebookAI/xlm-roberta-base",
+  "parity": {
+   "FLORES urd_Arab": {
+    "mean": 1.229,
+    "pairs": 1012
+   },
+   "FLORES pbt_Arab": {
+    "mean": 1.352,
+    "pairs": 1012
+   },
+   "FLORES snd_Arab": {
+    "mean": 1.289,
+    "pairs": 1012
+   },
+   "FLORES kas_Arab": {
+    "mean": 1.954,
+    "pairs": 1012
+   },
+   "FLORES pan_Guru": {
+    "mean": 1.582,
+    "pairs": 1012
+   },
+   "SMOL urd_Arab": {
+    "mean": 1.308,
+    "pairs": 563
+   },
+   "SMOL pnb_Arab (Shahmukhi)": {
+    "mean": 1.533,
+    "pairs": 863
+   },
+   "SMOL brh_Arab": {
+    "mean": 1.64,
+    "pairs": 863
+   },
+   "SMOL kas_Arab": {
+    "mean": 2.067,
+    "pairs": 863
+   }
+  },
+  "fertility": {
+   "urd_Arab": {
+    "tokens_per_word": 1.41,
+    "chars_per_token": 3.574,
+    "docs": 300
+   },
+   "urd_Latn": {
+    "tokens_per_word": 1.602,
+    "chars_per_token": 3.279,
+    "docs": 300
+   },
+   "pbt_Arab": {
+    "tokens_per_word": 1.565,
+    "chars_per_token": 3.077,
+    "docs": 300
+   },
+   "snd_Arab": {
+    "tokens_per_word": 1.532,
+    "chars_per_token": 3.05,
+    "docs": 300
+   },
+   "pnb_Arab": {
+    "tokens_per_word": 1.698,
+    "chars_per_token": 2.862,
+    "docs": 300
+   },
+   "skr_Arab": {
+    "tokens_per_word": 1.841,
+    "chars_per_token": 2.685,
+    "docs": 300
+   },
+   "bal_Arab": {
+    "tokens_per_word": 2.071,
+    "chars_per_token": 2.225,
+    "docs": 300
+   },
+   "brh_Arab": {
+    "tokens_per_word": 1.758,
+    "chars_per_token": 2.708,
+    "docs": 300
+   },
+   "kas_Arab": {
+    "tokens_per_word": 2.827,
+    "chars_per_token": 1.992,
+    "docs": 300
+   },
+   "hno_Arab": {
+    "tokens_per_word": 1.492,
+    "chars_per_token": 2.948,
+    "docs": 213
+   },
+   "phr_Arab": {
+    "tokens_per_word": 1.656,
+    "chars_per_token": 2.711,
+    "docs": 295
+   }
+  }
+ }
+}
